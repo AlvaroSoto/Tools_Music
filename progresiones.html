@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Progresiones de acordes — Tools_Music</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="./shared/ui.css">
+<style>
+.tm-root { max-width: 820px; }
+.opt-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:11px; color:#888; margin-bottom:16px; }
+.opt-row select { background:var(--tm-panel-2); color:#ddd; border:0.5px solid rgba(255,255,255,0.18); border-radius:6px; padding:5px 8px; font-family:'Space Mono',monospace; font-size:12px; }
+.palette { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:18px; }
+.dia { background:var(--tm-panel-2); border:0.5px solid rgba(255,255,255,0.12); border-radius:8px; padding:8px 10px; cursor:pointer; text-align:center; min-width:62px; }
+.dia:hover { background:rgba(52,152,219,0.18); }
+.dia .roman { font-size:9px; color:#9b59b6; }
+.dia .cn { font-family:'Bebas Neue',sans-serif; font-size:18px; color:#fff; letter-spacing:1px; }
+.prog { display:flex; gap:8px; flex-wrap:wrap; min-height:78px; background:#0d0d0d; border:0.5px dashed rgba(255,255,255,0.12); border-radius:10px; padding:12px; margin-bottom:14px; }
+.slot { position:relative; background:var(--tm-panel-2); border:0.5px solid rgba(255,255,255,0.15); border-radius:9px; padding:12px 14px; min-width:70px; text-align:center; }
+.slot.playing { border-color:#fff; box-shadow:0 0 14px rgba(255,255,255,0.35); }
+.slot .roman { font-size:9px; color:#9b59b6; }
+.slot .cn { font-family:'Bebas Neue',sans-serif; font-size:22px; color:#fff; letter-spacing:1px; }
+.slot .del { position:absolute; top:-6px; right:-6px; width:18px; height:18px; border-radius:50%; background:var(--tm-accent); color:#fff; font-size:11px; border:none; cursor:pointer; line-height:1; }
+.empty-hint { color:#555; font-size:11px; align-self:center; }
+.controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:6px 0 14px; }
+#status { font-size:10px; color:#666; }
+.preset-row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
+.preset { background:none; border:0.5px solid rgba(255,255,255,0.18); border-radius:7px; color:#aaa; font-family:'Space Mono',monospace; font-size:10px; padding:5px 10px; cursor:pointer; }
+.preset:hover { border-color:var(--tm-accent2,#3498db); color:#fff; background:rgba(52,152,219,0.12); }
+</style>
+</head>
+<body>
+<div class="tm-root">
+  <div class="tm-top">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="./index.html" class="tm-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;"><i class="ti ti-arrow-left"></i> MENÚ</a>
+      <div class="tm-title">PROGRESIONES</div>
+    </div>
+    <div class="tm-controls">
+      <div class="tm-stepper">BPM <button class="tm-step-btn" id="bpmDown">&minus;</button><input type="range" min="40" max="200" value="90" id="bpmSlider"><span class="tm-stepper-val" id="bpmVal">90</span></div>
+      <button class="tm-btn accent" id="playBtn"><i class="ti ti-player-play"></i> PLAY</button>
+    </div>
+  </div>
+
+  <div class="opt-row">
+    <label>Tonalidad: <select id="keySel"></select></label>
+    <label>Onda: <select id="waveSel"><option value="triangle" selected>Triángulo</option><option value="sine">Seno</option><option value="sawtooth">Sierra</option></select></label>
+    <label>Compases por acorde: <select id="barSel"><option>1</option><option>2</option></select></label>
+  </div>
+
+  <div class="tm-hint" style="margin-bottom:6px;">Acordes diatónicos (clic para añadir a la progresión):</div>
+  <div class="palette" id="palette"></div>
+
+  <div class="tm-hint" style="margin-bottom:6px;">Progresiones comunes:</div>
+  <div class="preset-row" id="presets"></div>
+
+  <div class="prog" id="prog"></div>
+
+  <div class="controls">
+    <button class="tm-btn" id="clearBtn"><i class="ti ti-trash"></i> VACIAR</button>
+    <button class="tm-btn export-btn accent" id="btnMidi"><i class="ti ti-file-download"></i> EXPORTAR MIDI</button>
+    <button class="tm-btn export-btn accent" id="btnWav"><i class="ti ti-music"></i> EXPORTAR WAV</button>
+    <span id="status"></span>
+  </div>
+</div>
+
+<script src="./shared/audio.js"></script>
+<script src="./shared/synth.js"></script>
+<script src="./shared/theory.js"></script>
+<script src="./shared/midi.js"></script>
+<script>
+(function(){
+  'use strict';
+  const T = window.TMTheory, S = window.TMSynth, A = window.TMAudio, M = window.TMMidi;
+
+  let key = 0, bpm = 90, wave='triangle', barsPer=1;
+  let prog = [];   // [{degree, quality, roman, name, rootMidi}]
+  let playing=false, timer=null, curIdx=0;
+
+  const PRESETS = {
+    'I–V–vi–IV': [0,4,5,3],
+    'ii–V–I':    [1,4,0],
+    'I–vi–IV–V': [0,5,3,4],
+    'vi–IV–I–V': [5,3,0,4],
+    'I–IV–V':    [0,3,4],
+    'blues I–IV–V': [0,0,3,3,4,4,0,0]
+  };
+
+  function diatonic(){
+    const roots=T.scaleNotes(60+key,'major');
+    return roots.map((m,idx)=>{
+      const q=T.DIATONIC_MAJOR[idx];
+      return { degree:idx, quality:q, roman:T.ROMAN_MAJOR[idx],
+               name:T.NOTES_SHARP[((m%12)+12)%12]+T.CHORDS[q].symbol, rootMidi:m };
+    });
+  }
+
+  function fillKey(){ const sel=document.getElementById('keySel'); sel.innerHTML=''; T.NOTES_SHARP.forEach((n,i)=>{ const o=document.createElement('option');o.value=i;o.textContent=n;sel.appendChild(o); }); }
+
+  function renderPalette(){
+    const wrap=document.getElementById('palette'); wrap.innerHTML='';
+    diatonic().forEach(ch=>{
+      const d=document.createElement('div'); d.className='dia';
+      d.innerHTML='<div class="roman">'+ch.roman+'</div><div class="cn">'+ch.name+'</div>';
+      d.addEventListener('click',()=>{ prog.push(ch); renderProg(); previewChord(ch); });
+      wrap.appendChild(d);
+    });
+  }
+
+  function renderPresets(){
+    const wrap=document.getElementById('presets'); wrap.innerHTML='';
+    Object.keys(PRESETS).forEach(name=>{
+      const b=document.createElement('button'); b.className='preset'; b.textContent=name;
+      b.addEventListener('click',()=>{ const dia=diatonic(); prog=PRESETS[name].map(i=>dia[i]); renderProg(); });
+      wrap.appendChild(b);
+    });
+  }
+
+  function renderProg(){
+    const wrap=document.getElementById('prog'); wrap.innerHTML='';
+    if(!prog.length){ wrap.innerHTML='<span class="empty-hint">Añade acordes desde arriba o elige una progresión común…</span>'; return; }
+    prog.forEach((ch,i)=>{
+      const s=document.createElement('div'); s.className='slot'; s.dataset.i=i;
+      s.innerHTML='<div class="roman">'+ch.roman+'</div><div class="cn">'+ch.name+'</div><button class="del" title="quitar">×</button>';
+      s.querySelector('.del').addEventListener('click',e=>{ e.stopPropagation(); prog.splice(i,1); renderProg(); });
+      s.addEventListener('click',()=>previewChord(ch));
+      wrap.appendChild(s);
+    });
+  }
+
+  function previewChord(ch){
+    const c=A.getCtx();
+    T.chordNotes(ch.rootMidi,ch.quality).forEach(n=>S.playNote(T.midiToFreq(n),{ctx:c,dur:1.1,gain:0.36,type:wave}));
+  }
+
+  function chordDurSec(){ return barsPer * 4 * (60/bpm); } // compás 4/4
+
+  function tick(){
+    document.querySelectorAll('.slot.playing').forEach(x=>x.classList.remove('playing'));
+    if(!prog.length){ return; }
+    const ch=prog[curIdx];
+    previewChord(ch);
+    const el=document.querySelector('.slot[data-i="'+curIdx+'"]'); if(el) el.classList.add('playing');
+    curIdx=(curIdx+1)%prog.length;
+  }
+
+  function start(){ if(!prog.length) return; playing=true; curIdx=0; const b=document.getElementById('playBtn'); b.innerHTML='<i class="ti ti-player-stop"></i> STOP'; b.classList.add('playing'); tick(); timer=setInterval(tick,chordDurSec()*1000); }
+  function stop(){ playing=false; clearInterval(timer); const b=document.getElementById('playBtn'); b.innerHTML='<i class="ti ti-player-play"></i> PLAY'; b.classList.remove('playing'); document.querySelectorAll('.slot.playing').forEach(x=>x.classList.remove('playing')); }
+  function restart(){ if(playing){ clearInterval(timer); timer=setInterval(tick,chordDurSec()*1000); } }
+
+  function setBpm(v){ bpm=Math.max(40,Math.min(200,v|0)); document.getElementById('bpmVal').textContent=bpm; document.getElementById('bpmSlider').value=bpm; restart(); }
+
+  // Notas para exportar: cada acorde ocupa barsPer*4 negras.
+  function collectNotes(){
+    const beatsPer=barsPer*4;
+    const notes=[];
+    prog.forEach((ch,i)=>{
+      T.chordNotes(ch.rootMidi,ch.quality).forEach(n=>{
+        notes.push({ midi:n, start:i*beatsPer, dur:beatsPer*0.95, velocity:85 });
+      });
+    });
+    return notes;
+  }
+
+  function exportMidi(){
+    const notes=collectNotes(); if(!notes.length){ setStatus('Progresión vacía'); return; }
+    A.downloadBlob(M.build(notes,{bpm,ppq:480}),'progresion.mid');
+    setStatus('MIDI descargado'); setTimeout(()=>setStatus(''),3000);
+  }
+
+  async function exportWav(){
+    const notes=collectNotes(); if(!notes.length){ setStatus('Progresión vacía'); return; }
+    setStatus('Renderizando…');
+    const secPerBeat=60/bpm;
+    const loopDur=prog.length*barsPer*4*secPerBeat;
+    const final=await A.renderLoop(loopDur,(off)=>{
+      notes.forEach(n=>{
+        const o=off.createOscillator(), g=off.createGain();
+        o.type=wave; o.frequency.value=T.midiToFreq(n.midi);
+        o.connect(g); g.connect(off.destination);
+        const t=n.start*secPerBeat, end=t+n.dur*secPerBeat;
+        g.gain.setValueAtTime(0.0001,t);
+        g.gain.exponentialRampToValueAtTime(0.22,t+0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001,end);
+        o.start(t); o.stop(end+0.05);
+      });
+    },{tailExtra:1.5});
+    A.downloadBlob(A.bufferToWav(final),'progresion.wav');
+    setStatus('WAV descargado'); setTimeout(()=>setStatus(''),3000);
+  }
+
+  function setStatus(m){ document.getElementById('status').textContent=m; }
+
+  document.getElementById('bpmSlider').addEventListener('input',function(){ setBpm(parseInt(this.value)); });
+  document.getElementById('bpmDown').addEventListener('click',()=>setBpm(bpm-1));
+  document.getElementById('playBtn').addEventListener('click',()=>{ if(playing) stop(); else start(); });
+  document.getElementById('keySel').addEventListener('change',function(){
+    const oldDia=diatonic(); key=parseInt(this.value); const newDia=diatonic();
+    // transponer la progresión a la nueva tonalidad por grado
+    prog=prog.map(ch=>newDia[ch.degree]);
+    renderPalette(); renderProg();
+  });
+  document.getElementById('waveSel').addEventListener('change',function(){ wave=this.value; });
+  document.getElementById('barSel').addEventListener('change',function(){ barsPer=parseInt(this.value); restart(); });
+  document.getElementById('clearBtn').addEventListener('click',()=>{ if(playing) stop(); prog=[]; renderProg(); });
+  document.getElementById('btnMidi').addEventListener('click',exportMidi);
+  document.getElementById('btnWav').addEventListener('click',exportWav);
+
+  fillKey(); renderPalette(); renderPresets(); renderProg();
+})();
+</script>
+</body>
+</html>
