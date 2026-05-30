@@ -1,0 +1,113 @@
+/* shared/ui.css — Tema visual común de Tools_Music
+ * Extraído de bateria.html: tema oscuro, tipografías (Bebas Neue + Space Mono),
+ * botones y sliders. Importa las fuentes y los iconos Tabler desde los <head>
+ * de cada herramienta:
+ *   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+ *   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+ */
+
+:root {
+  --tm-bg: #0a0a0a;
+  --tm-panel: #111;
+  --tm-panel-2: #1a1a1a;
+  --tm-accent: #e74c3c;
+  --tm-accent-2: #3498db;
+  --tm-ok: #27ae60;
+  --tm-warn: #f1c40f;
+  --tm-text: #ddd;
+  --tm-muted: #555;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--tm-bg);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 24px 12px;
+  font-family: 'Space Mono', monospace;
+  color: var(--tm-text);
+}
+
+.tm-root {
+  background: var(--tm-panel);
+  border-radius: 16px;
+  padding: 20px;
+  width: 100%;
+  max-width: 780px;
+}
+
+.tm-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.tm-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 6px;
+  color: #fff;
+}
+
+.tm-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.tm-btn {
+  background: rgba(255,255,255,0.07);
+  border: 0.5px solid rgba(255,255,255,0.18);
+  border-radius: 8px;
+  color: var(--tm-text);
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  padding: 6px 14px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.15s;
+}
+.tm-btn:hover { background: rgba(255,255,255,0.13); }
+.tm-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.tm-btn.playing { background: #c0392b; border-color: var(--tm-accent); color: #fff; }
+.tm-btn.accent { border-color: rgba(52,152,219,0.5); color: #85b7eb; }
+.tm-btn.accent:hover { background: rgba(52,152,219,0.15); }
+.tm-btn.warn { border-color: rgba(241,196,15,0.5); color: var(--tm-warn); }
+.tm-btn.warn:hover { background: rgba(241,196,15,0.1); }
+
+/* Control numérico tipo BPM con botones +/- */
+.tm-stepper { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #666; }
+.tm-stepper input[type=range] { width: 80px; accent-color: var(--tm-accent); }
+.tm-stepper-val {
+  color: #fff; font-weight: 700; min-width: 32px; text-align: center;
+  font-size: 13px; background: rgba(231,76,60,0.12);
+  border: 0.5px solid rgba(231,76,60,0.35); border-radius: 5px;
+  padding: 3px 8px; letter-spacing: 0.5px;
+}
+.tm-step-btn {
+  background: rgba(255,255,255,0.06); border: 0.5px solid rgba(255,255,255,0.18);
+  border-radius: 5px; color: #bbb; font-family: 'Space Mono', monospace;
+  font-size: 12px; font-weight: 700; width: 22px; height: 22px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; padding: 0;
+  line-height: 1; user-select: none;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+.tm-step-btn:hover { background: rgba(231,76,60,0.2); border-color: var(--tm-accent); color: #fff; }
+.tm-step-btn:active { background: rgba(231,76,60,0.4); }
+
+.tm-panel {
+  background: var(--tm-panel-2);
+  border-radius: 12px;
+  border: 0.5px solid rgba(255,255,255,0.08);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.tm-section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 16px; letter-spacing: 3px; color: #aaa; margin-bottom: 12px;
+}
+
+.tm-hint { font-size: 10px; color: #444; letter-spacing: 0.5px; }
