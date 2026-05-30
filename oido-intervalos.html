@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intervalos de oído — Tools_Music</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="./shared/ui.css">
+<style>
+.tm-root { max-width: 640px; }
+.score { display:flex; gap:10px; margin-bottom:16px; }
+.score-box { flex:1; background:var(--tm-panel-2); border:0.5px solid rgba(255,255,255,0.08); border-radius:10px; padding:10px 14px; text-align:center; }
+.score-box .lbl { font-size:9px; letter-spacing:1px; color:#666; }
+.score-box .val { font-family:'Bebas Neue',sans-serif; font-size:30px; color:#fff; }
+.opt-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:11px; color:#888; margin-bottom:16px; }
+.opt-row select { background:var(--tm-panel-2); color:#ddd; border:0.5px solid rgba(255,255,255,0.18); border-radius:6px; padding:6px 9px; font-family:'Space Mono',monospace; font-size:12px; }
+.play-area { text-align:center; margin:18px 0; }
+.replay { width:90px; height:90px; border-radius:50%; font-size:13px; }
+.choices { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:8px; margin-top:8px; }
+.choice { background:var(--tm-panel-2); border:0.5px solid rgba(255,255,255,0.12); border-radius:9px; padding:12px 8px; cursor:pointer; text-align:center; transition:background 0.1s, border-color 0.1s; }
+.choice:hover { background:rgba(52,152,219,0.15); }
+.choice .ab { font-family:'Bebas Neue',sans-serif; font-size:22px; color:#fff; letter-spacing:1px; }
+.choice .nm { font-size:9px; color:#888; }
+.choice.correct { background:rgba(39,174,96,0.25); border-color:var(--tm-ok); }
+.choice.wrong { background:rgba(231,76,60,0.25); border-color:var(--tm-accent); }
+.choice.disabled { pointer-events:none; opacity:0.55; }
+.feedback { text-align:center; min-height:22px; font-size:13px; letter-spacing:1px; margin-top:14px; }
+.feedback.ok { color:var(--tm-ok); }
+.feedback.no { color:var(--tm-accent); }
+.next-btn { display:block; margin:12px auto 0; }
+</style>
+</head>
+<body>
+<div class="tm-root">
+  <div class="tm-top">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="./index.html" class="tm-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;"><i class="ti ti-arrow-left"></i> MENÚ</a>
+      <div class="tm-title">INTERVALOS</div>
+    </div>
+  </div>
+
+  <div class="score">
+    <div class="score-box"><div class="lbl">ACIERTOS</div><div class="val" id="sOk">0</div></div>
+    <div class="score-box"><div class="lbl">INTENTOS</div><div class="val" id="sTotal">0</div></div>
+    <div class="score-box"><div class="lbl">RACHA</div><div class="val" id="sStreak">0</div></div>
+  </div>
+
+  <div class="opt-row">
+    <label>Dificultad:
+      <select id="diffSel">
+        <option value="easy">Fácil (3ª, 5ª, 8ª)</option>
+        <option value="medium" selected>Media (diatónicos)</option>
+        <option value="hard">Difícil (todos)</option>
+      </select>
+    </label>
+    <label>Dirección:
+      <select id="dirSel">
+        <option value="up" selected>Ascendente</option>
+        <option value="down">Descendente</option>
+        <option value="harmonic">Armónico</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="play-area">
+    <button class="tm-btn accent replay" id="replayBtn"><i class="ti ti-volume"></i><br>ESCUCHAR</button>
+  </div>
+
+  <div class="choices" id="choices"></div>
+  <div class="feedback" id="feedback">&nbsp;</div>
+  <button class="tm-btn next-btn" id="nextBtn" style="display:none;">SIGUIENTE <i class="ti ti-arrow-right"></i></button>
+</div>
+
+<script src="./shared/audio.js"></script>
+<script src="./shared/synth.js"></script>
+<script src="./shared/theory.js"></script>
+<script>
+(function(){
+  'use strict';
+  const T = window.TMTheory, S = window.TMSynth;
+
+  const SETS = {
+    easy:   [3,4,7,12],
+    medium: [2,4,5,7,9,11,12],
+    hard:   [1,2,3,4,5,6,7,8,9,10,11,12]
+  };
+
+  let ok=0, total=0, streak=0;
+  let rootMidi=60, curSemis=0, answered=false;
+
+  function rngInt(a,b){ return a + Math.floor(Math.random()*(b-a+1)); }
+
+  function playInterval(){
+    const c = window.TMAudio.getCtx();
+    const dir = document.getElementById('dirSel').value;
+    const f1 = T.midiToFreq(rootMidi);
+    const f2 = T.midiToFreq(dir==='down' ? rootMidi - curSemis : rootMidi + curSemis);
+    const opt = {ctx:c, dur:0.9, gain:0.45, type:'triangle'};
+    if(dir==='harmonic'){
+      S.playNote(f1, opt); S.playNote(f2, opt);
+    } else {
+      S.playNote(f1, opt);
+      setTimeout(()=> S.playNote(f2, {ctx:window.TMAudio.getCtx(), dur:0.9, gain:0.45, type:'triangle'}), 620);
+    }
+  }
+
+  function renderChoices(){
+    const set = SETS[document.getElementById('diffSel').value];
+    const wrap = document.getElementById('choices');
+    wrap.innerHTML='';
+    set.forEach(semis=>{
+      const iv = T.intervalName(semis);
+      const c = document.createElement('div'); c.className='choice'; c.dataset.semis=semis;
+      c.innerHTML = '<div class="ab">'+iv.short+'</div><div class="nm">'+iv.name+'</div>';
+      c.addEventListener('click', ()=>guess(semis, c));
+      wrap.appendChild(c);
+    });
+  }
+
+  function newRound(){
+    answered=false;
+    document.getElementById('feedback').textContent=' ';
+    document.getElementById('feedback').className='feedback';
+    document.getElementById('nextBtn').style.display='none';
+    renderChoices();
+    const set = SETS[document.getElementById('diffSel').value];
+    curSemis = set[rngInt(0,set.length-1)];
+    rootMidi = rngInt(55,67); // tónica aleatoria moderada
+    playInterval();
+  }
+
+  function guess(semis, el){
+    if(answered) return;
+    answered=true; total++;
+    const correct = semis===curSemis;
+    document.querySelectorAll('.choice').forEach(c=>{
+      c.classList.add('disabled');
+      if(parseInt(c.dataset.semis)===curSemis) c.classList.add('correct');
+    });
+    const fb = document.getElementById('feedback');
+    if(correct){
+      ok++; streak++;
+      fb.textContent='✓ Correcto · '+T.intervalName(curSemis).name;
+      fb.className='feedback ok';
+    } else {
+      streak=0;
+      el.classList.add('wrong');
+      fb.textContent='✗ Era '+T.intervalName(curSemis).name;
+      fb.className='feedback no';
+    }
+    document.getElementById('sOk').textContent=ok;
+    document.getElementById('sTotal').textContent=total;
+    document.getElementById('sStreak').textContent=streak;
+    document.getElementById('nextBtn').style.display='block';
+  }
+
+  document.getElementById('replayBtn').addEventListener('click', playInterval);
+  document.getElementById('nextBtn').addEventListener('click', newRound);
+  document.getElementById('diffSel').addEventListener('change', newRound);
+  document.getElementById('dirSel').addEventListener('change', ()=>{ if(!answered) playInterval(); });
+
+  renderChoices();
+  newRound();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ritmo de oído — Tools_Music</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="./shared/ui.css">
+<style>
+.tm-root { max-width: 640px; }
+.score { display:flex; gap:10px; margin-bottom:16px; }
+.score-box { flex:1; background:var(--tm-panel-2); border:0.5px solid rgba(255,255,255,0.08); border-radius:10px; padding:10px 14px; text-align:center; }
+.score-box .lbl { font-size:9px; letter-spacing:1px; color:#666; }
+.score-box .val { font-family:'Bebas Neue',sans-serif; font-size:30px; color:#fff; }
+.opt-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:11px; color:#888; margin-bottom:16px; }
+.opt-row select { background:var(--tm-panel-2); color:#ddd; border:0.5px solid rgba(255,255,255,0.18); border-radius:6px; padding:6px 9px; font-family:'Space Mono',monospace; font-size:12px; }
+.steps { display:flex; gap:6px; justify-content:center; margin:18px 0; flex-wrap:wrap; }
+.step { width:34px; height:34px; border-radius:7px; background:var(--tm-panel-2); border:1px solid rgba(255,255,255,0.12); transition:transform 0.05s, background 0.05s, box-shadow 0.05s; }
+.step.beat { border-color:rgba(255,255,255,0.28); }
+.step.hit { background:#3498db; }
+.step.user { box-shadow: inset 0 0 0 2px var(--tm-ok); }
+.step.cursor { transform:scale(1.2); box-shadow:0 0 12px rgba(255,255,255,0.45); }
+.controls { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin:10px 0; }
+.pad { display:block; margin:16px auto 0; width:160px; height:90px; border-radius:14px; font-size:14px; }
+.pad:active, .pad.flash { background:rgba(52,152,219,0.35); }
+.feedback { text-align:center; min-height:22px; font-size:13px; letter-spacing:1px; margin-top:14px; }
+.feedback.ok { color:var(--tm-ok); }
+.feedback.no { color:var(--tm-accent); }
+.phase { text-align:center; font-size:11px; color:#777; letter-spacing:2px; min-height:14px; }
+</style>
+</head>
+<body>
+<div class="tm-root">
+  <div class="tm-top">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="./index.html" class="tm-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;"><i class="ti ti-arrow-left"></i> MENÚ</a>
+      <div class="tm-title">RITMO</div>
+    </div>
+  </div>
+
+  <div class="score">
+    <div class="score-box"><div class="lbl">PRECISIÓN</div><div class="val" id="sAcc">—</div></div>
+    <div class="score-box"><div class="lbl">RONDAS</div><div class="val" id="sRounds">0</div></div>
+    <div class="score-box"><div class="lbl">MEJOR</div><div class="val" id="sBest">—</div></div>
+  </div>
+
+  <div class="opt-row">
+    <label>Pasos:
+      <select id="lenSel"><option value="8" selected>8</option><option value="16">16</option></select>
+    </label>
+    <label>Tempo:
+      <select id="bpmSel"><option value="80">80</option><option value="100" selected>100</option><option value="120">120</option></select>
+    </label>
+    <label>Densidad:
+      <select id="densSel"><option value="0.35">Baja</option><option value="0.5" selected>Media</option><option value="0.65">Alta</option></select>
+    </label>
+  </div>
+
+  <div class="steps" id="steps"></div>
+  <div class="phase" id="phase">Pulsa ESCUCHAR para empezar</div>
+
+  <div class="controls">
+    <button class="tm-btn accent" id="listenBtn"><i class="ti ti-volume"></i> ESCUCHAR</button>
+    <button class="tm-btn" id="recBtn" disabled><i class="ti ti-microphone"></i> TU TURNO</button>
+    <button class="tm-btn" id="newBtn"><i class="ti ti-refresh"></i> NUEVO</button>
+  </div>
+
+  <button class="tm-btn pad" id="pad"><i class="ti ti-hand-finger"></i><br>TOCAR<br><span style="font-size:9px;color:#888;">(o barra espaciadora)</span></button>
+  <div class="feedback" id="feedback">&nbsp;</div>
+</div>
+
+<script src="./shared/audio.js"></script>
+<script src="./shared/synth.js"></script>
+<script>
+(function(){
+  'use strict';
+  const S = window.TMSynth, A = window.TMAudio;
+
+  let len=8, bpm=100, dens=0.5;
+  let target=[];        // booleanos del patrón objetivo
+  let userHits=[];      // booleanos capturados
+  let rounds=0, best=null;
+  let recording=false, recStartTime=0, cursorTimer=null;
+
+  function rng(){ return Math.random(); }
+  function stepDur(){ return 60/bpm/2; } // corcheas
+
+  function genPattern(){
+    target = new Array(len).fill(false);
+    target[0] = true; // siempre empieza con golpe
+    for(let i=1;i<len;i++) if(rng() < dens) target[i]=true;
+    userHits = new Array(len).fill(false);
+    buildSteps();
+    document.getElementById('feedback').textContent=' ';
+    document.getElementById('feedback').className='feedback';
+    document.getElementById('recBtn').disabled = true;
+    document.getElementById('phase').textContent='Pulsa ESCUCHAR para oír el patrón';
+  }
+
+  function buildSteps(){
+    const wrap = document.getElementById('steps'); wrap.innerHTML='';
+    for(let i=0;i<len;i++){
+      const d=document.createElement('div');
+      d.className='step'+(i%4===0?' beat':'')+(target[i]?' hit':'')+(userHits[i]?' user':'');
+      d.dataset.i=i;
+      wrap.appendChild(d);
+    }
+  }
+
+  function flashCursor(i){
+    document.querySelectorAll('.step').forEach(s=>s.classList.remove('cursor'));
+    const el=document.querySelector('.step[data-i="'+i+'"]');
+    if(el){ el.classList.add('cursor'); setTimeout(()=>el.classList.remove('cursor'),stepDur()*1000*0.8); }
+  }
+
+  function hitSound(when){ S.playDrum('snare', {when}); }
+  function clickSound(when, accent){
+    const c=A.getCtx(); const o=c.createOscillator(), g=c.createGain();
+    o.connect(g); g.connect(c.destination); o.frequency.value=accent?1500:900;
+    g.gain.setValueAtTime(0.0001,when); g.gain.exponentialRampToValueAtTime(accent?0.5:0.25,when+0.001);
+    g.gain.exponentialRampToValueAtTime(0.0001,when+0.04); o.start(when); o.stop(when+0.05);
+  }
+
+  function listen(){
+    const c=A.getCtx(), t0=c.currentTime+0.1, d=stepDur();
+    for(let i=0;i<len;i++){
+      const when=t0+i*d;
+      clickSound(when, i%4===0);
+      if(target[i]) hitSound(when);
+      const ms=(when-c.currentTime)*1000;
+      setTimeout(()=>flashCursor(i), ms);
+    }
+    document.getElementById('phase').textContent='Escuchando…';
+    setTimeout(()=>{
+      document.getElementById('recBtn').disabled=false;
+      document.getElementById('phase').textContent='Ahora pulsa TU TURNO y reprodúcelo';
+    }, (len*d+0.2)*1000);
+  }
+
+  function startRecording(){
+    userHits = new Array(len).fill(false);
+    buildSteps();
+    recording=false;
+    const c=A.getCtx(), d=stepDur();
+    document.getElementById('phase').textContent='Cuenta de entrada…';
+    // Cuenta de entrada: un compás (4 clicks)
+    const t0=c.currentTime+0.1;
+    for(let b=0;b<4;b++){
+      const when=t0+b*(d*2);
+      clickSound(when, b===0);
+    }
+    const recBegin = t0 + 4*(d*2);
+    const ms=(recBegin-c.currentTime)*1000;
+    setTimeout(()=>{
+      recording=true; recStartTime=performance.now();
+      document.getElementById('phase').textContent='¡Toca!';
+      // metrónomo guía durante la grabación
+      const c2=A.getCtx(), g0=c2.currentTime+0.02;
+      for(let i=0;i<len;i++){ clickSound(g0+i*d, i%4===0); setTimeout(()=>flashCursor(i),(g0+i*d-c2.currentTime)*1000); }
+      setTimeout(finishRecording, (len*d+0.15)*1000);
+    }, ms);
+  }
+
+  function tap(){
+    if(!recording) return;
+    const el=performance.now()-recStartTime;
+    const idx=Math.round(el/(stepDur()*1000));
+    S.playDrum('snare');
+    const pad=document.getElementById('pad'); pad.classList.add('flash'); setTimeout(()=>pad.classList.remove('flash'),60);
+    if(idx>=0 && idx<len){ userHits[idx]=true; buildSteps(); }
+  }
+
+  function finishRecording(){
+    recording=false;
+    document.querySelectorAll('.step').forEach(s=>s.classList.remove('cursor'));
+    // Comparar: aciertos = pasos coincidentes (hit==user) sobre total de pasos
+    let match=0;
+    for(let i=0;i<len;i++) if(target[i]===userHits[i]) match++;
+    const acc=Math.round(match/len*100);
+    rounds++;
+    if(best===null || acc>best) best=acc;
+    document.getElementById('sAcc').textContent=acc+'%';
+    document.getElementById('sRounds').textContent=rounds;
+    document.getElementById('sBest').textContent=best+'%';
+    const fb=document.getElementById('feedback');
+    if(acc>=90){ fb.textContent='✓ ¡Excelente! '+acc+'%'; fb.className='feedback ok'; }
+    else if(acc>=70){ fb.textContent='Casi · '+acc+'%'; fb.className='feedback'; }
+    else { fb.textContent='Sigue practicando · '+acc+'%'; fb.className='feedback no'; }
+    document.getElementById('phase').textContent='Comparativa: azul = objetivo · borde verde = tu toque';
+  }
+
+  document.getElementById('listenBtn').addEventListener('click', listen);
+  document.getElementById('recBtn').addEventListener('click', startRecording);
+  document.getElementById('newBtn').addEventListener('click', ()=>{ readOpts(); genPattern(); });
+  document.getElementById('pad').addEventListener('click', tap);
+  document.addEventListener('keydown', e=>{ if(e.code==='Space'){ e.preventDefault(); tap(); } });
+
+  function readOpts(){
+    len=parseInt(document.getElementById('lenSel').value);
+    bpm=parseInt(document.getElementById('bpmSel').value);
+    dens=parseFloat(document.getElementById('densSel').value);
+  }
+  ['lenSel','bpmSel','densSel'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{ readOpts(); genPattern(); }));
+
+  readOpts(); genPattern();
+})();
+</script>
+</body>
+</html>
