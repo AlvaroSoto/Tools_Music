@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Afinador — Tools_Music</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="./shared/ui.css">
+<style>
+.tm-root { max-width: 560px; text-align:center; }
+.note-big { font-family:'Bebas Neue',sans-serif; font-size:120px; line-height:1; color:#555; letter-spacing:4px; margin:6px 0; transition:color 0.15s; }
+.note-big.intune { color:var(--tm-ok); }
+.freq-line { font-size:12px; color:#777; letter-spacing:1px; }
+.target { font-size:11px; color:#555; margin-top:4px; }
+.meter { position:relative; height:70px; margin:24px 0 8px; }
+.meter-bar { position:absolute; top:30px; left:0; right:0; height:6px; background:var(--tm-panel-2); border-radius:3px; }
+.meter-center { position:absolute; top:18px; left:50%; width:2px; height:30px; background:var(--tm-ok); transform:translateX(-1px); }
+.meter-needle { position:absolute; top:10px; left:50%; width:4px; height:46px; background:var(--tm-accent); border-radius:2px; transition:left 0.08s, background 0.1s; transform:translateX(-2px); }
+.meter-needle.intune { background:var(--tm-ok); }
+.scale-marks { position:absolute; top:42px; left:0; right:0; display:flex; justify-content:space-between; font-size:9px; color:#555; }
+.cents { font-size:12px; color:#888; letter-spacing:1px; min-height:16px; }
+.start-btn { margin-top:24px; }
+.status { font-size:11px; color:#666; margin-top:14px; min-height:16px; letter-spacing:1px; }
+.a4row { font-size:10px; color:#555; margin-top:18px; }
+.a4row input { width:60px; background:var(--tm-panel-2); color:#ddd; border:0.5px solid rgba(255,255,255,0.18); border-radius:5px; padding:3px 6px; font-family:'Space Mono',monospace; text-align:center; }
+</style>
+</head>
+<body>
+<div class="tm-root">
+  <div class="tm-top">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="./index.html" class="tm-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;"><i class="ti ti-arrow-left"></i> MENÚ</a>
+      <div class="tm-title">AFINADOR</div>
+    </div>
+  </div>
+
+  <div class="note-big" id="noteName">—</div>
+  <div class="freq-line" id="freqLine">&nbsp;</div>
+  <div class="target" id="targetLine">&nbsp;</div>
+
+  <div class="meter">
+    <div class="meter-bar"></div>
+    <div class="meter-center"></div>
+    <div class="meter-needle" id="needle"></div>
+    <div class="scale-marks"><span>-50</span><span>-25</span><span>0</span><span>+25</span><span>+50</span></div>
+  </div>
+  <div class="cents" id="centsLine">&nbsp;</div>
+
+  <button class="tm-btn accent start-btn" id="startBtn"><i class="ti ti-microphone"></i> ACTIVAR MICRÓFONO</button>
+  <div class="status" id="status">Pulsa para empezar a afinar</div>
+
+  <div class="a4row">Referencia A4: <input type="number" id="a4" value="440" min="400" max="480" step="1"> Hz</div>
+</div>
+
+<script src="./shared/theory.js"></script>
+<script>
+(function(){
+  'use strict';
+  const T = window.TMTheory;
+  let actx = null, analyser = null, stream = null, rafId = null, running = false;
+  let a4 = 440;
+  const buf = new Float32Array(2048);
+
+  // Detección de tono por autocorrelación (algoritmo clásico tipo McLeod simplificado).
+  function autoCorrelate(buffer, sampleRate){
+    const SIZE = buffer.length;
+    let rms = 0;
+    for(let i=0;i<SIZE;i++){ const v=buffer[i]; rms += v*v; }
+    rms = Math.sqrt(rms/SIZE);
+    if(rms < 0.01) return -1; // señal demasiado débil
+
+    let r1=0, r2=SIZE-1, thres=0.2;
+    for(let i=0;i<SIZE/2;i++){ if(Math.abs(buffer[i])<thres){ r1=i; break; } }
+    for(let i=1;i<SIZE/2;i++){ if(Math.abs(buffer[SIZE-i])<thres){ r2=SIZE-i; break; } }
+    const b = buffer.slice(r1, r2);
+    const n = b.length;
+    const c = new Array(n).fill(0);
+    for(let i=0;i<n;i++) for(let j=0;j<n-i;j++) c[i] += b[j]*b[j+i];
+
+    let d=0; while(d<n-1 && c[d]>c[d+1]) d++;
+    let maxval=-1, maxpos=-1;
+    for(let i=d;i<n;i++){ if(c[i]>maxval){ maxval=c[i]; maxpos=i; } }
+    let t0 = maxpos;
+    if(t0<=0) return -1;
+    // interpolación parabólica
+    const x1=c[t0-1]||0, x2=c[t0], x3=c[t0+1]||0;
+    const a=(x1+x3-2*x2)/2, bb=(x3-x1)/2;
+    if(a) t0 = t0 - bb/(2*a);
+    return sampleRate/t0;
+  }
+
+  function freqToMidiFloat(freq){ return 69 + 12*Math.log2(freq/a4); }
+
+  function update(){
+    if(!running) return;
+    analyser.getFloatTimeDomainData(buf);
+    const freq = autoCorrelate(buf, actx.sampleRate);
+    if(freq > 0 && freq < 2000){
+      const midiF = freqToMidiFloat(freq);
+      const midi = Math.round(midiF);
+      const cents = Math.round((midiF - midi) * 100);
+      const name = T.midiToName(midi, false);
+      document.getElementById('noteName').textContent = name.replace(/(\d+)$/,'');
+      document.getElementById('freqLine').textContent = freq.toFixed(1)+' Hz';
+      document.getElementById('targetLine').textContent = 'objetivo '+name+' · '+T.midiToFreq(midi).toFixed(1)+' Hz';
+      const intune = Math.abs(cents) <= 5;
+      document.getElementById('centsLine').textContent = (cents>0?'+':'')+cents+' cents'+(intune?'  ✓ afinado':'');
+      const needle = document.getElementById('needle');
+      const pos = 50 + Math.max(-50, Math.min(50, cents)); // -50..50 → 0..100%
+      needle.style.left = pos+'%';
+      needle.classList.toggle('intune', intune);
+      document.getElementById('noteName').classList.toggle('intune', intune);
+    }
+    rafId = requestAnimationFrame(update);
+  }
+
+  async function startMic(){
+    try {
+      document.getElementById('status').textContent = 'Solicitando micrófono…';
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:false, noiseSuppression:false, autoGainControl:false } });
+      actx = new (window.AudioContext||window.webkitAudioContext)();
+      const src = actx.createMediaStreamSource(stream);
+      analyser = actx.createAnalyser();
+      analyser.fftSize = 2048;
+      src.connect(analyser);
+      running = true;
+      document.getElementById('status').textContent = 'Escuchando… toca una nota';
+      const btn = document.getElementById('startBtn');
+      btn.innerHTML = '<i class="ti ti-microphone-off"></i> DETENER';
+      btn.classList.add('playing');
+      update();
+    } catch(e){
+      console.error(e);
+      document.getElementById('status').textContent = 'No se pudo acceder al micrófono (' + e.name + ')';
+    }
+  }
+
+  function stopMic(){
+    running = false;
+    if(rafId) cancelAnimationFrame(rafId);
+    if(stream) stream.getTracks().forEach(t=>t.stop());
+    if(actx) actx.close();
+    stream = actx = analyser = null;
+    const btn = document.getElementById('startBtn');
+    btn.innerHTML = '<i class="ti ti-microphone"></i> ACTIVAR MICRÓFONO';
+    btn.classList.remove('playing');
+    document.getElementById('status').textContent = 'Detenido';
+    document.getElementById('noteName').textContent = '—';
+    document.getElementById('noteName').classList.remove('intune');
+    document.getElementById('needle').style.left = '50%';
+  }
+
+  document.getElementById('startBtn').addEventListener('click', ()=>{ if(running) stopMic(); else startMic(); });
+  document.getElementById('a4').addEventListener('change', function(){ a4 = parseInt(this.value)||440; });
+})();
+</script>
+</body>
+</html>

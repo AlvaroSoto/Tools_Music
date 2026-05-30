@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Metrónomo — Tools_Music</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="./shared/ui.css">
+<style>
+.tm-root { max-width: 560px; }
+.bpm-display { text-align:center; margin:10px 0 18px; }
+.bpm-num { font-family:'Bebas Neue',sans-serif; font-size:96px; line-height:1; color:#fff; letter-spacing:4px; }
+.bpm-unit { font-size:12px; color:#666; letter-spacing:3px; }
+.bpm-row { display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:18px; }
+.bpm-row input[type=range] { flex:1; max-width:260px; accent-color:var(--tm-accent); }
+.beats { display:flex; justify-content:center; gap:10px; margin:20px 0; flex-wrap:wrap; }
+.beat-dot { width:26px; height:26px; border-radius:50%; background:var(--tm-panel-2); border:1px solid rgba(255,255,255,0.15); transition:transform 0.05s, background 0.05s, box-shadow 0.05s; cursor:pointer; }
+.beat-dot.accent { border-color:var(--tm-accent); }
+.beat-dot.on { background:#fff; transform:scale(1.35); box-shadow:0 0 14px rgba(255,255,255,0.5); }
+.beat-dot.accent.on { background:var(--tm-accent); box-shadow:0 0 16px rgba(231,76,60,0.7); }
+.opt-grid { display:flex; gap:16px; flex-wrap:wrap; justify-content:center; font-size:11px; color:#888; margin-bottom:16px; }
+.opt-grid label { display:flex; align-items:center; gap:6px; }
+.opt-grid select { background:var(--tm-panel-2); color:#ddd; border:0.5px solid rgba(255,255,255,0.18); border-radius:6px; padding:5px 8px; font-family:'Space Mono',monospace; font-size:12px; }
+.big-play { display:block; margin:0 auto; width:120px; padding:14px 0; font-size:14px; }
+.tap-btn { display:block; margin:14px auto 0; }
+.tempo-name { text-align:center; font-size:11px; color:#666; letter-spacing:2px; margin-top:6px; min-height:14px; }
+</style>
+</head>
+<body>
+<div class="tm-root">
+  <div class="tm-top">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="./index.html" class="tm-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;"><i class="ti ti-arrow-left"></i> MENÚ</a>
+      <div class="tm-title">METRÓNOMO</div>
+    </div>
+  </div>
+
+  <div class="bpm-display">
+    <div class="bpm-num" id="bpmNum">120</div>
+    <div class="bpm-unit">BPM</div>
+    <div class="tempo-name" id="tempoName">Allegro</div>
+  </div>
+
+  <div class="bpm-row">
+    <button class="tm-step-btn" id="bpmDown">&minus;</button>
+    <input type="range" min="30" max="300" value="120" id="bpmSlider" step="1">
+    <button class="tm-step-btn" id="bpmUp">+</button>
+  </div>
+
+  <div class="opt-grid">
+    <label>Compás:
+      <select id="meterSel">
+        <option value="2">2/4</option>
+        <option value="3">3/4</option>
+        <option value="4" selected>4/4</option>
+        <option value="5">5/4</option>
+        <option value="6">6/8</option>
+        <option value="7">7/8</option>
+      </select>
+    </label>
+    <label>Subdivisión:
+      <select id="subSel">
+        <option value="1" selected>Negras</option>
+        <option value="2">Corcheas</option>
+        <option value="3">Tresillos</option>
+        <option value="4">Semicorcheas</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="beats" id="beats"></div>
+
+  <button class="tm-btn big-play accent" id="playBtn"><i class="ti ti-player-play"></i> INICIAR</button>
+  <button class="tm-btn tap-btn" id="tapBtn"><i class="ti ti-hand-finger"></i> TAP TEMPO</button>
+</div>
+
+<script src="./shared/audio.js"></script>
+<script>
+(function(){
+  'use strict';
+  const A = window.TMAudio;
+  let bpm = 120, meter = 4, sub = 1;
+  let playing = false, timer = null;
+  let beatIndex = 0;     // negra actual dentro del compás
+  let subIndex = 0;      // subdivisión dentro de la negra
+
+  const TEMPI = [
+    [0,'Largo'],[40,'Largo'],[60,'Adagio'],[76,'Andante'],
+    [108,'Moderato'],[120,'Allegro'],[168,'Presto'],[200,'Prestissimo']
+  ];
+  function tempoName(b){ let n='Largo'; for(const [t,name] of TEMPI){ if(b>=t) n=name; } return n; }
+
+  // Click sintetizado: tono corto. accent=true → más agudo y fuerte.
+  function click(accent, when){
+    const c = A.getCtx();
+    when = when || c.currentTime;
+    const o = c.createOscillator(), g = c.createGain();
+    o.connect(g); g.connect(c.destination);
+    o.frequency.value = accent ? 1800 : 1000;
+    const peak = accent ? 0.9 : 0.4;
+    g.gain.setValueAtTime(0.0001, when);
+    g.gain.exponentialRampToValueAtTime(peak, when+0.001);
+    g.gain.exponentialRampToValueAtTime(0.0001, when+0.05);
+    o.start(when); o.stop(when+0.06);
+  }
+
+  function buildBeats(){
+    const wrap = document.getElementById('beats');
+    wrap.innerHTML = '';
+    for(let i=0;i<meter;i++){
+      const d = document.createElement('div');
+      d.className = 'beat-dot' + (i===0?' accent':'');
+      d.dataset.i = i;
+      d.title = i===0 ? 'Acento (clic para alternar)' : 'clic para acentuar';
+      d.addEventListener('click', ()=> d.classList.toggle('accent'));
+      wrap.appendChild(d);
+    }
+  }
+
+  function flash(i){
+    document.querySelectorAll('.beat-dot').forEach(d=>d.classList.remove('on'));
+    const el = document.querySelector('.beat-dot[data-i="'+i+'"]');
+    if(el){ el.classList.add('on'); setTimeout(()=>el.classList.remove('on'), 90); }
+  }
+
+  function tick(){
+    const c = A.getCtx();
+    const isBeat = (subIndex === 0);
+    const dot = document.querySelector('.beat-dot[data-i="'+beatIndex+'"]');
+    const isAccent = isBeat && dot && dot.classList.contains('accent');
+    // Subdivisiones suenan más suaves que la negra principal
+    if(isBeat){ click(isAccent, c.currentTime); flash(beatIndex); }
+    else { click(false, c.currentTime); }
+
+    subIndex++;
+    if(subIndex >= sub){
+      subIndex = 0;
+      beatIndex = (beatIndex + 1) % meter;
+    }
+  }
+
+  function intervalMs(){ return (60/bpm/sub)*1000; }
+
+  function start(){
+    playing = true; beatIndex = 0; subIndex = 0;
+    const btn = document.getElementById('playBtn');
+    btn.innerHTML = '<i class="ti ti-player-stop"></i> DETENER';
+    btn.classList.add('playing');
+    tick();
+    timer = setInterval(tick, intervalMs());
+  }
+  function stop(){
+    playing = false; clearInterval(timer);
+    const btn = document.getElementById('playBtn');
+    btn.innerHTML = '<i class="ti ti-player-play"></i> INICIAR';
+    btn.classList.remove('playing');
+    document.querySelectorAll('.beat-dot').forEach(d=>d.classList.remove('on'));
+  }
+  function restart(){ if(playing){ clearInterval(timer); timer=setInterval(tick,intervalMs()); } }
+
+  function setBpm(v){
+    bpm = Math.max(30, Math.min(300, v|0));
+    document.getElementById('bpmNum').textContent = bpm;
+    document.getElementById('bpmSlider').value = bpm;
+    document.getElementById('tempoName').textContent = tempoName(bpm);
+    restart();
+  }
+
+  document.getElementById('bpmSlider').addEventListener('input', function(){ setBpm(parseInt(this.value)); });
+  document.getElementById('bpmDown').addEventListener('click', ()=>setBpm(bpm-1));
+  document.getElementById('bpmUp').addEventListener('click', ()=>setBpm(bpm+1));
+  document.getElementById('meterSel').addEventListener('change', function(){ meter=parseInt(this.value); buildBeats(); if(playing){ beatIndex=0; subIndex=0; } });
+  document.getElementById('subSel').addEventListener('change', function(){ sub=parseInt(this.value); subIndex=0; restart(); });
+  document.getElementById('playBtn').addEventListener('click', ()=>{ if(playing) stop(); else start(); });
+
+  // Tap tempo: promedia los últimos intervalos entre toques.
+  let taps = [];
+  document.getElementById('tapBtn').addEventListener('click', ()=>{
+    const now = performance.now();
+    taps = taps.filter(t => now - t < 2000);
+    taps.push(now);
+    if(taps.length >= 2){
+      let sum = 0;
+      for(let i=1;i<taps.length;i++) sum += taps[i]-taps[i-1];
+      const avg = sum/(taps.length-1);
+      setBpm(Math.round(60000/avg));
+    }
+  });
+
+  // Atajos: barra espaciadora inicia/detiene
+  document.addEventListener('keydown', e=>{
+    if(e.code==='Space'){ e.preventDefault(); if(playing) stop(); else start(); }
+  });
+
+  buildBeats();
+  setBpm(120);
+})();
+</script>
+</body>
+</html>

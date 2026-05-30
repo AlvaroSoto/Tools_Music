@@ -173,11 +173,22 @@ body{background:#0a0a0a;display:flex;justify-content:center;align-items:flex-sta
   </div>
 
   <div class="export-row">
+    <span class="exp-label">PRESETS:</span>
+    <select id="presetSel" style="background:#1a1a1a;color:#ddd;border:0.5px solid rgba(255,255,255,0.18);border-radius:6px;padding:5px 8px;font-family:'Space Mono',monospace;font-size:11px;">
+      <option value="">— elegir ritmo —</option>
+    </select>
+    <button class="dm-btn" id="btnSave"><i class="ti ti-copy"></i> COPIAR PATRÓN</button>
+    <button class="dm-btn" id="btnLoad"><i class="ti ti-clipboard-check"></i> CARGAR PATRÓN</button>
+  </div>
+
+  <div class="export-row">
     <span class="exp-label">EXPORTAR:</span>
     <button class="dm-btn export-btn" id="btnWav"><i class="ti ti-music"></i> WAV</button>
     <button class="dm-btn export-btn" id="btnImg"><i class="ti ti-photo"></i> PNG</button>
     <span id="exportStatus"></span>
   </div>
+
+  <textarea id="patternBox" placeholder="Pega aquí un patrón (JSON) y pulsa CARGAR PATRÓN" style="display:none;width:100%;margin-top:10px;background:#0d0d0d;color:#9ecbff;border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;font-family:'Space Mono',monospace;font-size:10px;min-height:64px;resize:vertical;"></textarea>
 </div>
 
 <div id="dragGhost" class="drag-ghost"></div>
@@ -746,6 +757,91 @@ function exportImage(){
 function setStatus(msg){ document.getElementById('exportStatus').textContent=msg; }
 document.getElementById('btnWav').addEventListener('click',exportWav);
 document.getElementById('btnImg').addEventListener('click',exportImage);
+
+// ─── Presets de ritmos y guardar/cargar patrones ───────────────────────────────
+// Cada preset: { steps, bpm, on: { drumId: [índices activos] } } a 16 pasos.
+const PRESETS = {
+  'Rock básico':   { steps:16, bpm:120, on:{ kick:[0,8], snare:[4,12], hihat:[0,2,4,6,8,10,12,14] } },
+  'Funk':          { steps:16, bpm:104, on:{ kick:[0,6,10], snare:[4,12], hihat:[0,2,4,6,8,10,12,14] } },
+  'Hip-Hop':       { steps:16, bpm:90,  on:{ kick:[0,7,10], snare:[4,12], hihat:[0,2,4,6,8,10,12,14] } },
+  'Balada (8th)':  { steps:8,  bpm:72,  on:{ kick:[0,4], snare:[4], hihat:[0,1,2,3,4,5,6,7] } },
+  'Disco':         { steps:16, bpm:120, on:{ kick:[0,4,8,12], snare:[4,12], hihat:[2,6,10,14], crash:[0] } },
+  'Shuffle':       { steps:12, bpm:110, on:{ kick:[0,6], snare:[3,9], hihat:[0,2,4,6,8,10] } },
+  'Vals (3/4)':    { steps:12, bpm:140, on:{ kick:[0], snare:[4,8], hihat:[0,2,4,6,8,10] } },
+  'Doble bombo':   { steps:16, bpm:160, on:{ kick:[0,2,4,6,8,10,12,14], snare:[4,12], crash:[0] } }
+};
+
+function clearGrid(){ DRUMS.forEach(d=>{ grid[d.id]=new Array(MAX_STEPS).fill(false); }); }
+
+function applyPattern(p){
+  const was = playing; if(playing) stopPlay();
+  clearGrid();
+  ACTIVE_STEPS = Math.max(4, Math.min(MAX_STEPS, p.steps||ACTIVE_STEPS));
+  document.getElementById('stepsSlider').value = ACTIVE_STEPS;
+  document.getElementById('stepsVal').textContent = ACTIVE_STEPS;
+  const on = p.on || p.grid || {};
+  DRUMS.forEach(d=>{
+    const arr = on[d.id];
+    if(Array.isArray(arr)){
+      // Soporta lista de índices o array de booleanos del tamaño del patrón
+      if(arr.length && typeof arr[0] === 'boolean'){
+        arr.forEach((v,i)=>{ if(v && i<MAX_STEPS) grid[d.id][i]=true; });
+      } else {
+        arr.forEach(i=>{ if(i>=0 && i<MAX_STEPS) grid[d.id][i]=true; });
+      }
+    }
+  });
+  if(p.bpm) setBpm(p.bpm);
+  buildTable();
+  updateActiveSteps();
+  if(was) startPlay();
+}
+
+// Serializa el estado actual a JSON compacto (índices activos por instrumento).
+function serializePattern(){
+  const on = {};
+  DRUMS.forEach(d=>{
+    const idx = [];
+    for(let s=0;s<ACTIVE_STEPS;s++) if(grid[d.id][s]) idx.push(s);
+    if(idx.length) on[d.id] = idx;
+  });
+  return JSON.stringify({ steps:ACTIVE_STEPS, bpm:bpm, on:on });
+}
+
+// Rellena el desplegable de presets
+(function fillPresets(){
+  const sel = document.getElementById('presetSel');
+  Object.keys(PRESETS).forEach(name=>{
+    const o = document.createElement('option'); o.value=name; o.textContent=name; sel.appendChild(o);
+  });
+  sel.addEventListener('change', function(){
+    if(this.value && PRESETS[this.value]) applyPattern(PRESETS[this.value]);
+  });
+})();
+
+document.getElementById('btnSave').addEventListener('click', async ()=>{
+  const json = serializePattern();
+  const box = document.getElementById('patternBox');
+  box.style.display = 'block';
+  box.value = json;
+  box.select();
+  try { await navigator.clipboard.writeText(json); setStatus('Patrón copiado'); }
+  catch(e){ setStatus('Copia manual (Ctrl+C)'); }
+  setTimeout(()=>setStatus(''),3000);
+});
+
+document.getElementById('btnLoad').addEventListener('click', ()=>{
+  const box = document.getElementById('patternBox');
+  if(box.style.display === 'none'){ box.style.display='block'; box.focus(); setStatus('Pega el JSON y pulsa de nuevo'); setTimeout(()=>setStatus(''),3000); return; }
+  const txt = box.value.trim();
+  if(!txt){ box.focus(); return; }
+  try {
+    const p = JSON.parse(txt);
+    applyPattern(p);
+    setStatus('Patrón cargado');
+  } catch(e){ setStatus('JSON inválido'); }
+  setTimeout(()=>setStatus(''),3000);
+});
 
 buildTable();
 })();
