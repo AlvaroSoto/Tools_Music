@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Piano interactivo — Tools_Music</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="./shared/ui.css">
+<style>
+.tm-root { max-width: 900px; }
+.readout { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+.read-box { flex:1; min-width:140px; background:var(--tm-panel-2); border:0.5px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px 14px; }
+.read-box .lbl { font-size:9px; letter-spacing:1px; color:#666; }
+.read-box .val { font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:2px; color:#fff; margin-top:2px; }
+.read-box .sub { font-size:10px; color:#888; }
+.opt-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:11px; color:#888; margin-bottom:14px; }
+.opt-row select { background:var(--tm-panel-2); color:#ddd; border:0.5px solid rgba(255,255,255,0.18); border-radius:6px; padding:5px 8px; font-family:'Space Mono',monospace; font-size:11px; }
+.piano-wrap { overflow-x:auto; padding-bottom:8px; }
+.piano { position:relative; display:flex; height:180px; user-select:none; min-width:560px; }
+.key { position:relative; cursor:pointer; }
+.key.white { width:48px; background:linear-gradient(#fafafa,#e2e2e2); border:1px solid #222; border-radius:0 0 6px 6px; z-index:1; }
+.key.white:active, .key.white.active { background:linear-gradient(#cfe8ff,#9ecbff); }
+.key.white.tonic { background:linear-gradient(#ffe7a8,#ffd166); }
+.key.black { width:30px; height:108px; background:linear-gradient(#333,#000); border:1px solid #000; border-radius:0 0 4px 4px; margin:0 -15px; z-index:2; }
+.key.black:active, .key.black.active { background:linear-gradient(#3a7bd5,#2456a8); }
+.key .kname { position:absolute; bottom:6px; left:0; right:0; text-align:center; font-size:8px; letter-spacing:0.5px; pointer-events:none; }
+.key.white .kname { color:#666; }
+.key.black .kname { color:#aaa; bottom:4px; }
+</style>
+</head>
+<body>
+<div class="tm-root">
+  <div class="tm-top">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="./index.html" class="tm-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;"><i class="ti ti-arrow-left"></i> MENÚ</a>
+      <div class="tm-title">PIANO</div>
+    </div>
+  </div>
+
+  <div class="opt-row">
+    <label>Tónica:
+      <select id="tonicSel"></select>
+    </label>
+    <label><input type="checkbox" id="flatChk"> usar bemoles</label>
+    <span class="tm-hint">Haz clic en una tecla (o usa el teclado: fila Z=do, S/W=sostenidos)</span>
+  </div>
+
+  <div class="readout">
+    <div class="read-box"><div class="lbl">NOTA</div><div class="val" id="rNote">—</div><div class="sub" id="rFreq">&nbsp;</div></div>
+    <div class="read-box"><div class="lbl">INTERVALO DESDE TÓNICA</div><div class="val" id="rInt">—</div><div class="sub" id="rIntName">&nbsp;</div></div>
+  </div>
+
+  <div class="piano-wrap">
+    <div class="piano" id="piano"></div>
+  </div>
+</div>
+
+<script src="./shared/audio.js"></script>
+<script src="./shared/synth.js"></script>
+<script src="./shared/theory.js"></script>
+<script>
+(function(){
+  'use strict';
+  const T = window.TMTheory, S = window.TMSynth;
+  const START = 48, END = 72; // C3 .. C5
+  let tonic = 0;      // clase de altura de la tónica (0=C)
+  let useFlats = false;
+
+  // Mapa teclado-físico → offset de semitono desde C de la octava base (C4=60)
+  const KEYMAP = { 'z':0,'s':1,'x':2,'d':3,'c':4,'v':5,'g':6,'b':7,'h':8,'n':9,'j':10,'m':11,'q':12,'2':13,'w':14,'3':15,'e':16,'r':17 };
+
+  const tonicSel = document.getElementById('tonicSel');
+  function fillTonic(){
+    const names = useFlats ? T.NOTES_FLAT : T.NOTES_SHARP;
+    tonicSel.innerHTML = '';
+    names.forEach((n,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=n; tonicSel.appendChild(o); });
+    tonicSel.value = tonic;
+  }
+
+  function isBlack(midi){ return [1,3,6,8,10].includes(((midi%12)+12)%12); }
+
+  function press(midi){
+    S.playNote(T.midiToFreq(midi), {type:'triangle', dur:0.8, gain:0.5});
+    updateReadout(midi);
+    const el = document.querySelector('.key[data-midi="'+midi+'"]');
+    if(el){ el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),160); }
+  }
+
+  function updateReadout(midi){
+    document.getElementById('rNote').textContent = T.midiToName(midi, useFlats);
+    document.getElementById('rFreq').textContent = T.midiToFreq(midi).toFixed(1)+' Hz';
+    const semis = (((midi - tonic) % 12) + 12) % 12;
+    const iv = T.intervalName(semis === 0 ? 0 : semis);
+    document.getElementById('rInt').textContent = iv.short;
+    document.getElementById('rIntName').textContent = iv.name;
+  }
+
+  function build(){
+    const piano = document.getElementById('piano');
+    piano.innerHTML = '';
+    for(let m=START; m<=END; m++){
+      const black = isBlack(m);
+      const k = document.createElement('div');
+      k.className = 'key ' + (black?'black':'white');
+      k.dataset.midi = m;
+      if(((m%12)+12)%12 === tonic) k.classList.add('tonic');
+      const nm = document.createElement('div'); nm.className='kname';
+      nm.textContent = T.midiToName(m, useFlats);
+      k.appendChild(nm);
+      k.addEventListener('mousedown', ()=>press(m));
+      piano.appendChild(k);
+    }
+  }
+
+  tonicSel.addEventListener('change', ()=>{ tonic=parseInt(tonicSel.value); build(); });
+  document.getElementById('flatChk').addEventListener('change', function(){ useFlats=this.checked; fillTonic(); build(); });
+
+  // Teclado físico
+  const held = {};
+  document.addEventListener('keydown', e=>{
+    if(e.repeat) return;
+    const off = KEYMAP[e.key.toLowerCase()];
+    if(off==null) return;
+    const midi = 60 + off;
+    if(midi>=START && midi<=END){ held[e.key]=true; press(midi); }
+  });
+  document.addEventListener('keyup', e=>{ delete held[e.key]; });
+
+  fillTonic();
+  build();
+})();
+</script>
+</body>
+</html>

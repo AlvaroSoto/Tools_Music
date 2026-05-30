@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Círculo de quintas — Tools_Music</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="./shared/ui.css">
+<style>
+.tm-root { max-width: 860px; }
+.cof-body { display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start; }
+.cof-svg-wrap { flex:0 0 auto; }
+.seg-major { cursor:pointer; transition:fill 0.12s; }
+.seg-major:hover { fill:rgba(155,89,182,0.25); }
+.seg-major.sel { fill:rgba(155,89,182,0.5); }
+.seg-minor { cursor:pointer; transition:fill 0.12s; }
+.seg-minor:hover { fill:rgba(52,152,219,0.25); }
+.seg-minor.sel { fill:rgba(52,152,219,0.5); }
+.cof-label { font-family:'Bebas Neue',sans-serif; fill:#fff; text-anchor:middle; dominant-baseline:middle; pointer-events:none; }
+.cof-info { flex:1; min-width:240px; }
+.info-key { font-family:'Bebas Neue',sans-serif; font-size:38px; letter-spacing:3px; color:#fff; }
+.info-sub { font-size:11px; color:#888; margin-bottom:14px; }
+.info-line { display:flex; gap:8px; align-items:baseline; margin-bottom:8px; font-size:12px; }
+.info-line .k { color:#666; min-width:130px; letter-spacing:1px; font-size:10px; }
+.info-line .v { color:#ddd; }
+.chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
+.chip { background:var(--tm-panel-2); border:0.5px solid rgba(255,255,255,0.12); border-radius:7px; padding:6px 10px; cursor:pointer; text-align:center; }
+.chip:hover { background:rgba(52,152,219,0.18); }
+.chip .roman { font-size:9px; color:#9b59b6; }
+.chip .cn { font-family:'Bebas Neue',sans-serif; font-size:18px; color:#fff; letter-spacing:1px; }
+</style>
+</head>
+<body>
+<div class="tm-root">
+  <div class="tm-top">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="./index.html" class="tm-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;"><i class="ti ti-arrow-left"></i> MENÚ</a>
+      <div class="tm-title">CÍRCULO DE QUINTAS</div>
+    </div>
+  </div>
+
+  <div class="cof-body">
+    <div class="cof-svg-wrap">
+      <svg id="cof" viewBox="0 0 360 360" width="360" height="360" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <div class="cof-info" id="info"></div>
+  </div>
+</div>
+
+<script src="./shared/audio.js"></script>
+<script src="./shared/synth.js"></script>
+<script src="./shared/theory.js"></script>
+<script>
+(function(){
+  'use strict';
+  const T = window.TMTheory, S = window.TMSynth;
+
+  // Orden del círculo (mayores) por quintas, con armadura y relativo menor.
+  // pc = clase de altura de la tónica mayor.
+  const ORDER = [
+    {maj:'C',  pc:0,  rel:'Am',  sig:'—'},
+    {maj:'G',  pc:7,  rel:'Em',  sig:'1♯'},
+    {maj:'D',  pc:2,  rel:'Bm',  sig:'2♯'},
+    {maj:'A',  pc:9,  rel:'F♯m', sig:'3♯'},
+    {maj:'E',  pc:4,  rel:'C♯m', sig:'4♯'},
+    {maj:'B',  pc:11, rel:'G♯m', sig:'5♯'},
+    {maj:'F♯', pc:6,  rel:'D♯m', sig:'6♯'},
+    {maj:'D♭', pc:1,  rel:'B♭m', sig:'5♭'},
+    {maj:'A♭', pc:8,  rel:'Fm',  sig:'4♭'},
+    {maj:'E♭', pc:3,  rel:'Cm',  sig:'3♭'},
+    {maj:'B♭', pc:10, rel:'Gm',  sig:'2♭'},
+    {maj:'F',  pc:5,  rel:'Dm',  sig:'1♭'}
+  ];
+
+  const CX=180, CY=180, R_OUT=170, R_MID=110, R_IN=62;
+  let selected = 0;
+
+  function pt(r, ang){ return [CX + r*Math.cos(ang), CY + r*Math.sin(ang)]; }
+  function arcPath(rInner, rOuter, a0, a1){
+    const [x0,y0]=pt(rOuter,a0), [x1,y1]=pt(rOuter,a1);
+    const [x2,y2]=pt(rInner,a1), [x3,y3]=pt(rInner,a0);
+    const large = (a1-a0) > Math.PI ? 1 : 0;
+    return `M${x0} ${y0} A${rOuter} ${rOuter} 0 ${large} 1 ${x1} ${y1} L${x2} ${y2} A${rInner} ${rInner} 0 ${large} 0 ${x3} ${y3} Z`;
+  }
+
+  function build(){
+    const svg = document.getElementById('cof');
+    const slice = Math.PI*2/12;
+    let html = '';
+    for(let i=0;i<12;i++){
+      const a0 = -Math.PI/2 + (i-0.5)*slice;
+      const a1 = -Math.PI/2 + (i+0.5)*slice;
+      const mid = (a0+a1)/2;
+      const o = ORDER[i];
+      // mayor (anillo externo)
+      html += `<path class="seg-major" data-i="${i}" d="${arcPath(R_MID,R_OUT,a0,a1)}" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>`;
+      // menor (anillo interno)
+      html += `<path class="seg-minor" data-i="${i}" d="${arcPath(R_IN,R_MID,a0,a1)}" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>`;
+      const [mx,my]=pt((R_MID+R_OUT)/2, mid);
+      const [nx,ny]=pt((R_IN+R_MID)/2, mid);
+      html += `<text class="cof-label" x="${mx}" y="${my}" font-size="20">${o.maj}</text>`;
+      html += `<text class="cof-label" x="${nx}" y="${ny}" font-size="12" fill="#9ecbff">${o.rel}</text>`;
+    }
+    svg.innerHTML = html;
+    svg.querySelectorAll('.seg-major,.seg-minor').forEach(s=>{
+      s.addEventListener('click', ()=>{ selected=parseInt(s.dataset.i); render(); playKey(); });
+    });
+  }
+
+  function diatonic(pc){
+    const roots = T.scaleNotes(60+pc, 'major'); // 7 grados
+    return roots.map((m,idx)=>{
+      const q = T.DIATONIC_MAJOR[idx];
+      const sym = T.CHORDS[q].symbol;
+      const name = T.NOTES_SHARP[((m%12)+12)%12] + sym;
+      return { roman:T.ROMAN_MAJOR[idx], name, midi:m, quality:q };
+    });
+  }
+
+  function render(){
+    document.querySelectorAll('.seg-major,.seg-minor').forEach(s=>s.classList.toggle('sel', parseInt(s.dataset.i)===selected));
+    const o = ORDER[selected];
+    const chords = diatonic(o.pc);
+    const info = document.getElementById('info');
+    info.innerHTML =
+      `<div class="info-key">${o.maj} mayor</div>`+
+      `<div class="info-sub">relativo menor: ${o.rel}</div>`+
+      `<div class="info-line"><span class="k">ARMADURA</span><span class="v">${o.sig}</span></div>`+
+      `<div class="info-line"><span class="k">DOMINANTE (V)</span><span class="v">${chords[4].name}</span></div>`+
+      `<div class="info-line"><span class="k">SUBDOMINANTE (IV)</span><span class="v">${chords[3].name}</span></div>`+
+      `<div class="info-line" style="flex-direction:column;align-items:flex-start;"><span class="k">ACORDES DIATÓNICOS</span><div class="chips" id="chips"></div></div>`;
+    const chipWrap = document.getElementById('chips');
+    chords.forEach(ch=>{
+      const c = document.createElement('div'); c.className='chip';
+      c.innerHTML = `<div class="roman">${ch.roman}</div><div class="cn">${ch.name}</div>`;
+      c.addEventListener('click', ()=>{
+        const ctx = window.TMAudio.getCtx();
+        T.chordNotes(ch.midi, ch.quality).forEach(n=> S.playNote(T.midiToFreq(n),{ctx,dur:1.1,gain:0.4}));
+      });
+      chipWrap.appendChild(c);
+    });
+  }
+
+  function playKey(){
+    const ctx = window.TMAudio.getCtx();
+    const root = 60 + ORDER[selected].pc;
+    // acorde de tónica
+    T.chordNotes(root,'maj').forEach(n=> S.playNote(T.midiToFreq(n),{ctx,dur:1.2,gain:0.4}));
+  }
+
+  build(); render();
+})();
+</script>
+</body>
+</html>

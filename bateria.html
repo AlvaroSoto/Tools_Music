@@ -91,7 +91,10 @@ body{background:#0a0a0a;display:flex;justify-content:center;align-items:flex-sta
 
 <div class="dm-root">
   <div class="dm-top">
-    <div class="dm-title">DRUM MACHINE</div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="./index.html" class="dm-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;" title="Volver al menú principal"><i class="ti ti-arrow-left"></i> MENÚ</a>
+      <div class="dm-title">DRUM MACHINE</div>
+    </div>
     <div class="dm-controls">
       <div class="dm-bpm">BPM <button class="bpm-btn" id="bpmDown" title="Bajar BPM">&minus;</button><input type="range" min="30" max="300" value="120" id="bpmSlider" step="1"><button class="bpm-btn" id="bpmUp" title="Subir BPM">+</button><span class="dm-bpm-val" id="bpmVal">120</span></div>
       <button class="dm-btn guide-btn" id="guideBtn"><i class="ti ti-help"></i> &iquest;QU&Eacute; ES?</button>

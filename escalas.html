@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Escalas y acordes — Tools_Music</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="./shared/ui.css">
+<style>
+.tm-root { max-width: 900px; }
+.opt-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:11px; color:#888; margin-bottom:14px; }
+.opt-row select { background:var(--tm-panel-2); color:#ddd; border:0.5px solid rgba(255,255,255,0.18); border-radius:6px; padding:6px 9px; font-family:'Space Mono',monospace; font-size:12px; }
+.seg { display:flex; border:0.5px solid rgba(255,255,255,0.18); border-radius:8px; overflow:hidden; }
+.seg button { background:none; border:none; color:#888; font-family:'Space Mono',monospace; font-size:11px; padding:6px 14px; cursor:pointer; }
+.seg button.on { background:rgba(52,152,219,0.2); color:#fff; }
+.notes-strip { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+.note-chip { background:var(--tm-panel-2); border:0.5px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 14px; cursor:pointer; min-width:46px; text-align:center; transition:background 0.1s; }
+.note-chip:hover { background:rgba(52,152,219,0.15); }
+.note-chip .nn { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:1px; color:#fff; }
+.note-chip .deg { font-size:9px; color:#3498db; letter-spacing:0.5px; }
+.note-chip.active { background:rgba(52,152,219,0.3); border-color:#3498db; }
+.piano-wrap { overflow-x:auto; padding-bottom:8px; }
+.piano { position:relative; display:flex; height:160px; user-select:none; min-width:560px; }
+.key { position:relative; cursor:pointer; }
+.key.white { width:48px; background:linear-gradient(#fafafa,#e2e2e2); border:1px solid #222; border-radius:0 0 6px 6px; z-index:1; }
+.key.black { width:30px; height:96px; background:linear-gradient(#333,#000); border:1px solid #000; border-radius:0 0 4px 4px; margin:0 -15px; z-index:2; }
+.key.in { box-shadow: inset 0 -40px 0 -10px rgba(52,152,219,0.55); }
+.key.black.in { box-shadow: inset 0 -30px 0 -8px rgba(52,152,219,0.8); }
+.key.root { box-shadow: inset 0 -40px 0 -10px rgba(255,209,102,0.7); }
+.key.black.root { box-shadow: inset 0 -30px 0 -8px rgba(255,209,102,0.9); }
+.key.active { filter:brightness(1.3); }
+</style>
+</head>
+<body>
+<div class="tm-root">
+  <div class="tm-top">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="./index.html" class="tm-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;"><i class="ti ti-arrow-left"></i> MENÚ</a>
+      <div class="tm-title">ESCALAS &amp; ACORDES</div>
+    </div>
+    <div class="tm-controls">
+      <button class="tm-btn accent" id="playBtn"><i class="ti ti-player-play"></i> REPRODUCIR</button>
+    </div>
+  </div>
+
+  <div class="opt-row">
+    <label>Tónica: <select id="tonicSel"></select></label>
+    <div class="seg" id="modeSeg">
+      <button data-mode="scale" class="on">ESCALA</button>
+      <button data-mode="chord">ACORDE</button>
+    </div>
+    <label id="typeWrap">Tipo: <select id="typeSel"></select></label>
+  </div>
+
+  <div class="notes-strip" id="notesStrip"></div>
+
+  <div class="piano-wrap">
+    <div class="piano" id="piano"></div>
+  </div>
+</div>
+
+<script src="./shared/audio.js"></script>
+<script src="./shared/synth.js"></script>
+<script src="./shared/theory.js"></script>
+<script>
+(function(){
+  'use strict';
+  const T = window.TMTheory, S = window.TMSynth;
+  const START = 48, END = 84; // C3 .. C6 (3 octavas para alcanzar extensiones)
+  let tonic = 0, mode = 'scale', type = 'major';
+
+  const tonicSel = document.getElementById('tonicSel');
+  const typeSel  = document.getElementById('typeSel');
+
+  function fillTonic(){
+    tonicSel.innerHTML='';
+    T.NOTES_SHARP.forEach((n,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=n; tonicSel.appendChild(o); });
+    tonicSel.value=tonic;
+  }
+  function fillTypes(){
+    typeSel.innerHTML='';
+    const src = mode==='scale' ? T.SCALES : T.CHORDS;
+    Object.keys(src).forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=src[k].name; typeSel.appendChild(o); });
+    type = Object.keys(src)[0];
+    typeSel.value = type;
+  }
+
+  // Notas MIDI actuales (en la octava base 60+tonic).
+  function currentNotes(){
+    const root = 60 + tonic;
+    return mode==='scale' ? T.scaleNotes(root, type) : T.chordNotes(root, type);
+  }
+
+  function isBlack(midi){ return [1,3,6,8,10].includes(((midi%12)+12)%12); }
+
+  function flashKey(midi){
+    const el = document.querySelector('.key[data-midi="'+midi+'"]');
+    if(el){ el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),180); }
+  }
+
+  function renderNotes(){
+    const notes = currentNotes();
+    const strip = document.getElementById('notesStrip');
+    strip.innerHTML='';
+    notes.forEach((m,i)=>{
+      const chip = document.createElement('div'); chip.className='note-chip';
+      chip.innerHTML = '<div class="nn">'+T.midiToName(m,false).replace(/\d+$/,'')+'</div><div class="deg">'+(i+1)+(mode==='scale'?'º':'')+'</div>';
+      chip.addEventListener('click', ()=>{ S.playNote(T.midiToFreq(m),{dur:0.7,gain:0.5}); flashKey(m); });
+      strip.appendChild(chip);
+    });
+    paintPiano(notes);
+  }
+
+  function paintPiano(notes){
+    const set = new Set(notes.map(m=>((m%12)+12)%12));
+    const rootPc = ((60+tonic)%12+12)%12;
+    document.querySelectorAll('.key').forEach(k=>{
+      const pc = ((parseInt(k.dataset.midi)%12)+12)%12;
+      k.classList.toggle('in', set.has(pc) && pc!==rootPc);
+      k.classList.toggle('root', pc===rootPc && set.has(pc));
+    });
+  }
+
+  function buildPiano(){
+    const piano = document.getElementById('piano'); piano.innerHTML='';
+    for(let m=START;m<=END;m++){
+      const k=document.createElement('div');
+      k.className='key '+(isBlack(m)?'black':'white');
+      k.dataset.midi=m;
+      k.addEventListener('mousedown', ()=>{ S.playNote(T.midiToFreq(m),{dur:0.6,gain:0.45}); flashKey(m); });
+      piano.appendChild(k);
+    }
+  }
+
+  function playSequence(){
+    const c = window.TMAudio.getCtx();
+    const notes = currentNotes();
+    if(mode==='chord'){
+      // Acorde: todas juntas, más una pasada arpegiada suave
+      notes.forEach(m=> S.playNote(T.midiToFreq(m),{ctx:c, dur:1.4, gain:0.4}));
+      notes.forEach((m,i)=> setTimeout(()=>flashKey(m), i*40));
+    } else {
+      const seq = notes.concat([notes[0]+12]); // ascendente + octava
+      seq.forEach((m,i)=>{
+        setTimeout(()=>{ S.playNote(T.midiToFreq(m),{ctx:c,dur:0.45,gain:0.45}); flashKey(m); }, i*260);
+      });
+    }
+  }
+
+  tonicSel.addEventListener('change',()=>{ tonic=parseInt(tonicSel.value); renderNotes(); });
+  typeSel.addEventListener('change',()=>{ type=typeSel.value; renderNotes(); });
+  document.querySelectorAll('#modeSeg button').forEach(b=>{
+    b.addEventListener('click',()=>{
+      document.querySelectorAll('#modeSeg button').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on'); mode=b.dataset.mode; fillTypes(); renderNotes();
+    });
+  });
+  document.getElementById('playBtn').addEventListener('click', playSequence);
+
+  fillTonic(); fillTypes(); buildPiano(); renderNotes();
+})();
+</script>
+</body>
+</html>
