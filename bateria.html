@@ -25,7 +25,10 @@ body{background:var(--tm-bg);display:flex;justify-content:center;align-items:fle
 .dm-btn.export-btn:hover{background:rgba(52,152,219,0.15);}
 .dm-bpm{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--tm-muted);}
 .dm-bpm input[type=range]{width:80px;accent-color:#e74c3c;}
-.dm-bpm-val{color:var(--tm-color-white);font-weight:700;min-width:32px;text-align:center;font-size:13px;background:rgba(231,76,60,0.12);border:0.5px solid rgba(231,76,60,0.35);border-radius:5px;padding:3px 8px;letter-spacing:0.5px;}
+.dm-bpm-val{color:var(--tm-color-white);font-weight:700;width:38px;display:inline-block;text-align:center;font-size:13px;background:rgba(231,76,60,0.12);border:0.5px solid rgba(231,76,60,0.35);border-radius:5px;padding:3px 0;letter-spacing:0.5px;}
+.bpm-term{font-size:9px;color:var(--tm-muted);min-width:55px;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;margin-left:4px;}
+.dm-vol{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--tm-muted);margin-left:8px;padding-left:8px;border-left:1px solid var(--tm-overlay-10);}
+.dm-vol input[type=range]{width:60px;accent-color:#3498db;}
 .bpm-btn{background:var(--tm-overlay-06);border:0.5px solid var(--tm-overlay-18);border-radius:5px;color:#bbb;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;width:22px;height:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1;user-select:none;transition:background 0.1s,color 0.1s,border-color 0.1s;}
 .bpm-btn:hover{background:rgba(231,76,60,0.2);border-color:#e74c3c;color:var(--tm-color-white);}
 .bpm-btn:active{background:rgba(231,76,60,0.4);}
@@ -96,7 +99,8 @@ body{background:var(--tm-bg);display:flex;justify-content:center;align-items:fle
       <div class="dm-title">BATERÍA</div>
     </div>
     <div class="dm-controls">
-      <div class="dm-bpm">BPM <button class="bpm-btn" id="bpmDown" title="Bajar BPM">&minus;</button><input type="range" min="30" max="300" value="120" id="bpmSlider" step="1"><button class="bpm-btn" id="bpmUp" title="Subir BPM">+</button><span class="dm-bpm-val" id="bpmVal">120</span></div>
+      <div class="dm-bpm">BPM <button class="bpm-btn" id="bpmDown" title="Bajar BPM">&minus;</button><input type="range" min="30" max="300" value="120" id="bpmSlider" step="1"><button class="bpm-btn" id="bpmUp" title="Subir BPM">+</button><span class="dm-bpm-val" id="bpmVal">120</span><span class="bpm-term" id="bpmTerm">Allegro</span></div>
+      <div class="dm-vol" title="Volumen maestro"><i class="ti ti-volume"></i><input type="range" min="0" max="1" step="0.05" value="0.8" id="volSlider"></div>
       <button class="dm-btn guide-btn" id="guideBtn"><i class="ti ti-help"></i> &iquest;QU&Eacute; ES?</button>
       <button class="dm-btn" id="playBtn" disabled>CARGANDO...</button>
       <button class="clear-btn" id="clearBtn">LIMPIAR</button>
@@ -169,7 +173,7 @@ body{background:var(--tm-bg);display:flex;justify-content:center;align-items:fle
 
   <div class="seq-bottom">
     <div style="font-size:10px;color:var(--tm-muted);letter-spacing:0.5px;">clic instrumento = mute &middot; arrastra a pasos &middot; clic paso = activar</div>
-    <div class="steps-control">pasos <input type="range" min="4" max="16" value="4" id="stepsSlider" step="4"> <span class="steps-val" id="stepsVal">4</span></div>
+    <div class="steps-control">pasos <input type="range" min="4" max="64" value="16" id="stepsSlider" step="4"> <span class="steps-val" id="stepsVal" style="min-width:30px">16</span> <span id="compasesVal" style="color:var(--tm-overlay-50);font-size:9px;">(1 compás)</span></div>
   </div>
 
   <div class="export-row">
@@ -200,7 +204,15 @@ body{background:var(--tm-bg);display:flex;justify-content:center;align-items:fle
 const AC = window.AudioContext || window.webkitAudioContext;
 let actx = null;
 function getCtx(){
-  if(!actx) actx = new AC();
+  if(!actx){
+    actx = new AC();
+    masterGain = actx.createGain();
+    masterGain.connect(actx.destination);
+    masterGain.gain.value = parseFloat(document.getElementById('volSlider').value) || 0.8;
+    document.getElementById('volSlider').addEventListener('input', e => {
+      if(masterGain) masterGain.gain.value = parseFloat(e.target.value);
+    });
+  }
   if(actx.state === 'suspended') actx.resume();
   return actx;
 }
@@ -310,7 +322,7 @@ loadAllSamples();
 // ─── Synth fallback (always used when no sample) ─────────────────────────────
 function synthFallback(id, c, now){
   const out = c.createGain();
-  out.connect(c.destination);
+  out.connect(masterGain || c.destination);
   function noise(dur){
     const len = Math.ceil(c.sampleRate*dur), buf = c.createBuffer(1,len,c.sampleRate), d = buf.getChannelData(0);
     for(let i=0;i<len;i++) d[i] = Math.random()*2-1;
@@ -366,7 +378,7 @@ function playDrum(id, c, when){
     const g = c.createGain();
     g.gain.value = GAIN_MAP[id] || 1.0;
     src.connect(g);
-    g.connect(c.destination);
+    g.connect(masterGain || c.destination);
     src.start(when);
   } else {
     synthFallback(id, c, when);
@@ -384,9 +396,10 @@ function flashPart(id){
 }
 
 // ─── Sequencer state ──────────────────────────────────────────────────────────
-const MAX_STEPS = 16;
-let ACTIVE_STEPS = 4, bpm = 120, playing = false, currentStep = 0, intervalId = null;
+const MAX_STEPS = 64;
+let ACTIVE_STEPS = 16, bpm = 120, playing = false, currentStep = 0, intervalId = null;
 const grid = {}, muted = {};
+let masterGain = null;
 DRUMS.forEach(d=>{ grid[d.id]=new Array(MAX_STEPS).fill(false); muted[d.id]=false; });
 
 // ─── Guide panel ──────────────────────────────────────────────────────────────
@@ -542,11 +555,17 @@ function stopPlay(){
 }
 
 document.getElementById('playBtn').addEventListener('click',()=>{ if(playing) stopPlay(); else startPlay(); });
+function getTempoName(b){
+  if(b<60) return 'Largo'; if(b<76) return 'Adagio'; if(b<108) return 'Andante';
+  if(b<120) return 'Moderato'; if(b<140) return 'Allegro'; if(b<168) return 'Vivace';
+  return 'Presto';
+}
 function setBpm(newBpm){
   newBpm = Math.max(30, Math.min(300, newBpm|0));
   bpm = newBpm;
   document.getElementById('bpmSlider').value = bpm;
   document.getElementById('bpmVal').textContent = bpm;
+  document.getElementById('bpmTerm').textContent = getTempoName(bpm);
   if(playing){ stopPlay(); startPlay(); }
 }
 document.getElementById('bpmSlider').addEventListener('input',function(){
@@ -569,6 +588,8 @@ document.getElementById('bpmUp').addEventListener('click',()=>setBpm(bpm+1));
 });
 document.getElementById('stepsSlider').addEventListener('input',function(){
   ACTIVE_STEPS=parseInt(this.value); document.getElementById('stepsVal').textContent=ACTIVE_STEPS;
+  const comp = Math.ceil(ACTIVE_STEPS/16);
+  document.getElementById('compasesVal').textContent = `(${comp} compás${comp!==1?'es':''})`;
   if(playing&&currentStep>=ACTIVE_STEPS) currentStep=0;
   updateActiveSteps();
 });
@@ -713,7 +734,8 @@ function bufferToWav(buffer){
 function exportImage(){
   setStatus('Generando PNG...');
   const CELL=30,LABEL_W=110,PAD=16,BEAT_GAP=8;
-  const W=LABEL_W+MAX_STEPS*CELL+Math.floor((MAX_STEPS-1)/4)*BEAT_GAP+PAD*2;
+  const DRAW_STEPS = Math.max(16, ACTIVE_STEPS);
+  const W=LABEL_W+DRAW_STEPS*CELL+Math.floor((DRAW_STEPS-1)/4)*BEAT_GAP+PAD*2;
   const H=46+DRUMS.length*38+32;
   const canvas=document.createElement('canvas'); canvas.width=W*2; canvas.height=H*2;
   const ctx2=canvas.getContext('2d'); ctx2.scale(2,2);
@@ -737,7 +759,7 @@ function exportImage(){
     ctx2.beginPath(); ctx2.arc(PAD+7,y+19,4,0,Math.PI*2); ctx2.fillStyle=drum.color; ctx2.fill();
     ctx2.fillStyle='#aaa'; ctx2.font='bold 9px monospace'; ctx2.fillText(drum.label,PAD+18,y+22);
     ctx2.globalAlpha=1;
-    for(let s=0;s<MAX_STEPS;s++){
+    for(let s=0;s<DRAW_STEPS;s++){
       const extra=Math.floor(s/4)*BEAT_GAP, x=PAD+LABEL_W+s*CELL+extra, cx=x+CELL/2, cy=y+19, r=10, active=s<ACTIVE_STEPS;
       ctx2.beginPath(); ctx2.roundRect(cx-r,cy-r,r*2,r*2,3);
       if(grid[drum.id][s]&&active){ ctx2.globalAlpha=isMuted?0.25:1; ctx2.fillStyle=drum.color; ctx2.fill(); ctx2.globalAlpha=1; }
@@ -768,7 +790,11 @@ const PRESETS = {
   'Disco':         { steps:16, bpm:120, on:{ kick:[0,4,8,12], snare:[4,12], hihat:[2,6,10,14], crash:[0] } },
   'Shuffle':       { steps:12, bpm:110, on:{ kick:[0,6], snare:[3,9], hihat:[0,2,4,6,8,10] } },
   'Vals (3/4)':    { steps:12, bpm:140, on:{ kick:[0], snare:[4,8], hihat:[0,2,4,6,8,10] } },
-  'Doble bombo':   { steps:16, bpm:160, on:{ kick:[0,2,4,6,8,10,12,14], snare:[4,12], crash:[0] } }
+  'Doble bombo':   { steps:16, bpm:160, on:{ kick:[0,2,4,6,8,10,12,14], snare:[4,12], crash:[0] } },
+  'Jazz Swing':    { steps:12, bpm:130, on:{ kick:[0,6], snare:[9], hihat:[3,9], ride:[0,3,4,6,9,10] } },
+  'Blues (Shuffle)':{ steps:12, bpm:90, on:{ kick:[0,6,8], snare:[3,9], hihat:[0,2,4,6,8,10] } },
+  'Bossa Nova':    { steps:16, bpm:140, on:{ kick:[0,3,8,11], snare:[2,5,9,12,14], hihat:[0,2,4,6,8,10,12,14], ride:[0,4,8,12] } },
+  'Reggae':        { steps:16, bpm:75,  on:{ kick:[4,12], snare:[4,12], hihat:[0,2,4,6,8,10,12,14] } }
 };
 
 function clearGrid(){ DRUMS.forEach(d=>{ grid[d.id]=new Array(MAX_STEPS).fill(false); }); }
