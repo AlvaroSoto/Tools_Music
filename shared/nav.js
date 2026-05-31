@@ -57,13 +57,24 @@
         <a href="./index.html" style="color: var(--tm-text); text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px;">TOOLS_MUSIC</a>
       </div>
       <div class="tm-nav-actions">
-        <button id="tm-theme-btn" class="tm-btn" style="padding:6px; border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center; background: rgba(255,255,255,0.07); border: 0.5px solid rgba(255,255,255,0.18); color: var(--tm-text); cursor: pointer;">
+        <button id="tm-widget-metronome" class="tm-btn" style="padding:6px; border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center; background: rgba(255,255,255,0.07); border: 0.5px solid rgba(255,255,255,0.18); color: var(--tm-text); cursor: pointer;" title="Metrónomo">
+          <i class="ti ti-metronome" style="font-size:16px;"></i>
+        </button>
+        <button id="tm-widget-tuner" class="tm-btn" style="padding:6px; border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center; background: rgba(255,255,255,0.07); border: 0.5px solid rgba(255,255,255,0.18); color: var(--tm-text); cursor: pointer;" title="Afinador">
+          <i class="ti ti-microphone" style="font-size:16px;"></i>
+        </button>
+        <button id="tm-theme-btn" class="tm-btn" style="padding:6px; border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center; background: rgba(255,255,255,0.07); border: 0.5px solid rgba(255,255,255,0.18); color: var(--tm-text); cursor: pointer;" title="Cambiar Tema">
           <i id="tm-theme-icon" class="ti ti-sun" style="font-size:16px;"></i>
         </button>
       </div>
     `;
 
     document.body.insertBefore(nav, document.body.firstChild);
+    
+    // Load widgets.js dynamically
+    const widgetsScript = document.createElement('script');
+    widgetsScript.src = './shared/widgets.js?v=1';
+    document.body.appendChild(widgetsScript);
     
     // Fallback for body padding
     document.body.style.paddingTop = '74px';
