@@ -11,13 +11,13 @@
 <style>
 .tm-root { max-width: 640px; }
 .score { display:flex; gap:10px; margin-bottom:16px; }
-.score-box { flex:1; background:var(--tm-panel-2); border:0.5px solid rgba(255,255,255,0.08); border-radius:10px; padding:10px 14px; text-align:center; }
+.score-box { flex:1; background:var(--tm-panel-2); border:0.5px solid var(--tm-overlay-08); border-radius:10px; padding:10px 14px; text-align:center; }
 .score-box .lbl { font-size:9px; letter-spacing:1px; color:#666; }
-.score-box .val { font-family:'Bebas Neue',sans-serif; font-size:30px; color:#fff; }
+.score-box .val { font-family:'Bebas Neue',sans-serif; font-size:30px; color:var(--tm-color-white); }
 .opt-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:11px; color:#888; margin-bottom:16px; }
-.opt-row select { background:var(--tm-panel-2); color:#ddd; border:0.5px solid rgba(255,255,255,0.18); border-radius:6px; padding:6px 9px; font-family:'Space Mono',monospace; font-size:12px; }
+.opt-row select { background:var(--tm-panel-2); color:#ddd; border:0.5px solid var(--tm-overlay-18); border-radius:6px; padding:6px 9px; font-family:'Space Mono',monospace; font-size:12px; }
 .steps { display:flex; gap:6px; justify-content:center; margin:18px 0; flex-wrap:wrap; }
-.step { width:34px; height:34px; border-radius:7px; background:var(--tm-panel-2); border:1px solid rgba(255,255,255,0.12); transition:transform 0.05s, background 0.05s, box-shadow 0.05s; }
+.step { width:34px; height:34px; border-radius:7px; background:var(--tm-panel-2); border:1px solid var(--tm-overlay-12); transition:transform 0.05s, background 0.05s, box-shadow 0.05s; }
 .step.beat { border-color:rgba(255,255,255,0.28); }
 .step.hit { background:#3498db; }
 .step.user { box-shadow: inset 0 0 0 2px var(--tm-ok); }

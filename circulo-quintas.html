@@ -18,18 +18,18 @@
 .seg-minor { cursor:pointer; transition:fill 0.12s; }
 .seg-minor:hover { fill:rgba(52,152,219,0.25); }
 .seg-minor.sel { fill:rgba(52,152,219,0.5); }
-.cof-label { font-family:'Bebas Neue',sans-serif; fill:#fff; text-anchor:middle; dominant-baseline:middle; pointer-events:none; }
+.cof-label { font-family:'Bebas Neue',sans-serif; fill:var(--tm-color-white); text-anchor:middle; dominant-baseline:middle; pointer-events:none; }
 .cof-info { flex:1; min-width:240px; }
-.info-key { font-family:'Bebas Neue',sans-serif; font-size:38px; letter-spacing:3px; color:#fff; }
+.info-key { font-family:'Bebas Neue',sans-serif; font-size:38px; letter-spacing:3px; color:var(--tm-color-white); }
 .info-sub { font-size:11px; color:#888; margin-bottom:14px; }
 .info-line { display:flex; gap:8px; align-items:baseline; margin-bottom:8px; font-size:12px; }
 .info-line .k { color:#666; min-width:130px; letter-spacing:1px; font-size:10px; }
 .info-line .v { color:#ddd; }
 .chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
-.chip { background:var(--tm-panel-2); border:0.5px solid rgba(255,255,255,0.12); border-radius:7px; padding:6px 10px; cursor:pointer; text-align:center; }
+.chip { background:var(--tm-panel-2); border:0.5px solid var(--tm-overlay-12); border-radius:7px; padding:6px 10px; cursor:pointer; text-align:center; }
 .chip:hover { background:rgba(52,152,219,0.18); }
 .chip .roman { font-size:9px; color:#9b59b6; }
-.chip .cn { font-family:'Bebas Neue',sans-serif; font-size:18px; color:#fff; letter-spacing:1px; }
+.chip .cn { font-family:'Bebas Neue',sans-serif; font-size:18px; color:var(--tm-color-white); letter-spacing:1px; }
 </style>
 </head>
 <body>
@@ -95,9 +95,9 @@
       const mid = (a0+a1)/2;
       const o = ORDER[i];
       // mayor (anillo externo)
-      html += `<path class="seg-major" data-i="${i}" d="${arcPath(R_MID,R_OUT,a0,a1)}" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>`;
+      html += `<path class="seg-major" data-i="${i}" d="${arcPath(R_MID,R_OUT,a0,a1)}" fill="var(--tm-overlay-04)" stroke="var(--tm-overlay-12)" stroke-width="1"/>`;
       // menor (anillo interno)
-      html += `<path class="seg-minor" data-i="${i}" d="${arcPath(R_IN,R_MID,a0,a1)}" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>`;
+      html += `<path class="seg-minor" data-i="${i}" d="${arcPath(R_IN,R_MID,a0,a1)}" fill="var(--tm-overlay-02)" stroke="var(--tm-overlay-10)" stroke-width="1"/>`;
       const [mx,my]=pt((R_MID+R_OUT)/2, mid);
       const [nx,ny]=pt((R_IN+R_MID)/2, mid);
       html += `<text class="cof-label" x="${mx}" y="${my}" font-size="20">${o.maj}</text>`;

@@ -11,18 +11,18 @@
 <style>
 .tm-root { max-width: 560px; }
 .bpm-display { text-align:center; margin:10px 0 18px; }
-.bpm-num { font-family:'Bebas Neue',sans-serif; font-size:96px; line-height:1; color:#fff; letter-spacing:4px; }
+.bpm-num { font-family:'Bebas Neue',sans-serif; font-size:96px; line-height:1; color:var(--tm-color-white); letter-spacing:4px; }
 .bpm-unit { font-size:12px; color:#666; letter-spacing:3px; }
 .bpm-row { display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:18px; }
 .bpm-row input[type=range] { flex:1; max-width:260px; accent-color:var(--tm-accent); }
 .beats { display:flex; justify-content:center; gap:10px; margin:20px 0; flex-wrap:wrap; }
-.beat-dot { width:26px; height:26px; border-radius:50%; background:var(--tm-panel-2); border:1px solid rgba(255,255,255,0.15); transition:transform 0.05s, background 0.05s, box-shadow 0.05s; cursor:pointer; }
+.beat-dot { width:26px; height:26px; border-radius:50%; background:var(--tm-panel-2); border:1px solid var(--tm-overlay-15); transition:transform 0.05s, background 0.05s, box-shadow 0.05s; cursor:pointer; }
 .beat-dot.accent { border-color:var(--tm-accent); }
-.beat-dot.on { background:#fff; transform:scale(1.35); box-shadow:0 0 14px rgba(255,255,255,0.5); }
+.beat-dot.on { background:var(--tm-color-white); transform:scale(1.35); box-shadow:0 0 14px var(--tm-overlay-50); }
 .beat-dot.accent.on { background:var(--tm-accent); box-shadow:0 0 16px rgba(231,76,60,0.7); }
 .opt-grid { display:flex; gap:16px; flex-wrap:wrap; justify-content:center; font-size:11px; color:#888; margin-bottom:16px; }
 .opt-grid label { display:flex; align-items:center; gap:6px; }
-.opt-grid select { background:var(--tm-panel-2); color:#ddd; border:0.5px solid rgba(255,255,255,0.18); border-radius:6px; padding:5px 8px; font-family:'Space Mono',monospace; font-size:12px; }
+.opt-grid select { background:var(--tm-panel-2); color:#ddd; border:0.5px solid var(--tm-overlay-18); border-radius:6px; padding:5px 8px; font-family:'Space Mono',monospace; font-size:12px; }
 .big-play { display:block; margin:0 auto; width:120px; padding:14px 0; font-size:14px; }
 .tap-btn { display:block; margin:14px auto 0; }
 .tempo-name { text-align:center; font-size:11px; color:#666; letter-spacing:2px; margin-top:6px; min-height:14px; }

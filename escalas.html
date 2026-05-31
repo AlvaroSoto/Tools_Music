@@ -11,14 +11,14 @@
 <style>
 .tm-root { max-width: 900px; }
 .opt-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:11px; color:#888; margin-bottom:14px; }
-.opt-row select { background:var(--tm-panel-2); color:#ddd; border:0.5px solid rgba(255,255,255,0.18); border-radius:6px; padding:6px 9px; font-family:'Space Mono',monospace; font-size:12px; }
-.seg { display:flex; border:0.5px solid rgba(255,255,255,0.18); border-radius:8px; overflow:hidden; }
+.opt-row select { background:var(--tm-panel-2); color:#ddd; border:0.5px solid var(--tm-overlay-18); border-radius:6px; padding:6px 9px; font-family:'Space Mono',monospace; font-size:12px; }
+.seg { display:flex; border:0.5px solid var(--tm-overlay-18); border-radius:8px; overflow:hidden; }
 .seg button { background:none; border:none; color:#888; font-family:'Space Mono',monospace; font-size:11px; padding:6px 14px; cursor:pointer; }
-.seg button.on { background:rgba(52,152,219,0.2); color:#fff; }
+.seg button.on { background:rgba(52,152,219,0.2); color:var(--tm-color-white); }
 .notes-strip { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
-.note-chip { background:var(--tm-panel-2); border:0.5px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 14px; cursor:pointer; min-width:46px; text-align:center; transition:background 0.1s; }
+.note-chip { background:var(--tm-panel-2); border:0.5px solid var(--tm-overlay-10); border-radius:8px; padding:8px 14px; cursor:pointer; min-width:46px; text-align:center; transition:background 0.1s; }
 .note-chip:hover { background:rgba(52,152,219,0.15); }
-.note-chip .nn { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:1px; color:#fff; }
+.note-chip .nn { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:1px; color:var(--tm-color-white); }
 .note-chip .deg { font-size:9px; color:#3498db; letter-spacing:0.5px; }
 .note-chip.active { background:rgba(52,152,219,0.3); border-color:#3498db; }
 .piano-wrap { overflow-x:auto; padding-bottom:8px; }
