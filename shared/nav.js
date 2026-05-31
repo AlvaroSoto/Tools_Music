@@ -49,9 +49,9 @@
     const backHref = isIndex ? '#' : './index.html';
     const backDisplay = isIndex ? 'none' : 'flex';
 
-    nav.innerHTML = \`
+    nav.innerHTML = `
       <div style="display:flex;align-items:center;gap:15px;">
-        <a href="\${backHref}" style="display:\${backDisplay}; font-size:14px; background:var(--tm-panel-2); padding:4px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.1); color: var(--tm-text); text-decoration: none; font-family: 'Space Mono', monospace;">
+        <a href="${backHref}" style="display:${backDisplay}; font-size:14px; background:var(--tm-panel-2); padding:4px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.1); color: var(--tm-text); text-decoration: none; font-family: 'Space Mono', monospace;">
           <i class="ti ti-arrow-left"></i> Menú
         </a>
         <a href="./index.html" style="color: var(--tm-text); text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px;">TOOLS_MUSIC</a>
@@ -61,7 +61,7 @@
           <i id="tm-theme-icon" class="ti ti-sun" style="font-size:16px;"></i>
         </button>
       </div>
-    \`;
+    `;
 
     document.body.insertBefore(nav, document.body.firstChild);
     
