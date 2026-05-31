@@ -9,30 +9,43 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <link rel="stylesheet" href="./shared/ui.css?v=3">
 <style>
-.tm-root { max-width: 960px; }
-.hero { text-align: center; margin-bottom: 28px; }
-.hero h1 { font-family: 'Bebas Neue', sans-serif; font-size: 48px; letter-spacing: 10px; color: var(--tm-color-white); }
-.hero p { color: #777; font-size: 12px; letter-spacing: 1px; margin-top: 6px; max-width: 620px; margin-left: auto; margin-right: auto; line-height: 1.6; }
-.area { margin-bottom: 28px; }
-.area-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-.area-head .dot { width: 10px; height: 10px; border-radius: 50%; }
-.area-head h2 { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 4px; color: #ccc; }
-.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.tm-root { max-width: 960px; margin: 0 auto; }
+.hero { text-align: center; margin-bottom: 40px; padding-top: 20px; }
+.hero h1 { font-family: 'Bebas Neue', sans-serif; font-size: 56px; letter-spacing: 12px; color: var(--tm-color-white); margin-bottom: 12px;}
+.hero p { color: var(--tm-muted); font-size: 13px; letter-spacing: 1px; max-width: 580px; margin: 0 auto; line-height: 1.6; }
+.area { margin-bottom: 36px; }
+.area-head { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; padding-bottom: 8px; border-bottom: 1px solid var(--tm-overlay-05); }
+.area-head .dot { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+.area-head h2 { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 5px; color: var(--tm-text); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
 .card {
-  display: block; text-decoration: none; background: var(--tm-panel-2);
-  border: 0.5px solid var(--tm-overlay-08); border-radius: 12px; padding: 16px;
-  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  display: flex; flex-direction: column; text-decoration: none; background: var(--tm-panel-2);
+  border: 1px solid var(--tm-overlay-05); border-radius: 16px; padding: 20px 24px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
 }
-.card:hover { background: var(--tm-overlay-04); transform: translateY(-2px); }
-.card.ready { border-left: 3px solid var(--tm-ok); }
-.card.soon { opacity: 0.55; cursor: default; }
-.card .ci { font-size: 22px; margin-bottom: 8px; display: block; }
-.card .ct { font-size: 13px; font-weight: 700; color: var(--tm-color-white); letter-spacing: 1px; }
-.card .cd { font-size: 10px; color: var(--tm-muted); margin-top: 6px; line-height: 1.5; }
-.card .tag { font-size: 8px; letter-spacing: 1px; margin-top: 10px; display: inline-block; padding: 2px 7px; border-radius: 4px; }
-.tag.ready { background: rgba(39,174,96,0.15); color: var(--tm-ok); }
-.tag.soon { background: var(--tm-overlay-06); color: var(--tm-muted); }
-footer { text-align: center; color: var(--tm-muted); font-size: 10px; letter-spacing: 1px; margin-top: 24px; }
+.card:hover { 
+  background: var(--tm-panel); 
+  transform: translateY(-4px); 
+  border-color: var(--tm-overlay-15);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.2);
+}
+.card .ci { font-size: 28px; margin-bottom: 16px; transition: transform 0.3s; }
+.card:hover .ci { transform: scale(1.15) rotate(5deg); }
+.card .ct { font-size: 14px; font-weight: 700; color: var(--tm-color-white); letter-spacing: 1.5px; }
+.card .cd { 
+  font-size: 11px; color: var(--tm-muted); line-height: 1.6; 
+  opacity: 0; max-height: 0; overflow: hidden; transform: translateY(10px);
+  transition: all 0.3s ease;
+}
+.card:hover .cd { 
+  opacity: 1; max-height: 80px; transform: translateY(0); margin-top: 10px;
+}
+footer { text-align: center; color: var(--tm-muted); font-size: 10px; letter-spacing: 1.5px; margin-top: 40px; padding-bottom: 20px; }
+@media (max-width: 600px) {
+  .hero h1 { font-size: 42px; }
+  .card .cd { opacity: 1; max-height: 80px; transform: translateY(0); margin-top: 10px; } /* Always show descriptions on mobile since no hover */
+}
 </style>
 </head>
 <body>
@@ -45,33 +58,33 @@ footer { text-align: center; color: var(--tm-muted); font-size: 10px; letter-spa
   <div class="area">
     <div class="area-head"><span class="dot" style="background:#9b59b6"></span><h2>TEORÍA MUSICAL</h2></div>
     <div class="cards">
-      <a class="card ready" href="./teclado.html"><i class="ti ti-piano ci" style="color:#9b59b6"></i><span class="ct">Piano interactivo</span><span class="cd">Teclado clicable con nombres de nota e intervalos.</span><span class="tag ready">DISPONIBLE</span></a>
-      <a class="card ready" href="./escalas.html"><i class="ti ti-music ci" style="color:#9b59b6"></i><span class="ct">Escalas y acordes</span><span class="cd">Explorador de escalas, modos y acordes.</span><span class="tag ready">DISPONIBLE</span></a>
-      <a class="card ready" href="./circulo-quintas.html"><i class="ti ti-circle-dashed ci" style="color:#9b59b6"></i><span class="ct">Círculo de quintas</span><span class="cd">Armaduras, relativos y acordes diatónicos.</span><span class="tag ready">DISPONIBLE</span></a>
+      <a class="card ready" href="./teclado.html"><i class="ti ti-piano ci" style="color:#9b59b6"></i><span class="ct">Piano interactivo</span><span class="cd">Teclado clicable con nombres de nota e intervalos.</span></a>
+      <a class="card ready" href="./escalas.html"><i class="ti ti-music ci" style="color:#9b59b6"></i><span class="ct">Escalas y acordes</span><span class="cd">Explorador de escalas, modos y acordes.</span></a>
+      <a class="card ready" href="./circulo-quintas.html"><i class="ti ti-circle-dashed ci" style="color:#9b59b6"></i><span class="ct">Círculo de quintas</span><span class="cd">Armaduras, relativos y acordes diatónicos.</span></a>
     </div>
   </div>
 
   <div class="area">
     <div class="area-head"><span class="dot" style="background:#f1c40f"></span><h2>ENTRENAMIENTO AUDITIVO</h2></div>
     <div class="cards">
-      <a class="card ready" href="./oido-intervalos.html"><i class="ti ti-ear ci" style="color:#f1c40f"></i><span class="ct">Intervalos de oído</span><span class="cd">Adivina el intervalo entre dos notas.</span><span class="tag ready">DISPONIBLE</span></a>
-      <a class="card ready" href="./oido-acordes.html"><i class="ti ti-ear ci" style="color:#f1c40f"></i><span class="ct">Acordes de oído</span><span class="cd">Identifica la calidad del acorde.</span><span class="tag ready">DISPONIBLE</span></a>
-      <a class="card ready" href="./oido-ritmo.html"><i class="ti ti-wave-square ci" style="color:#f1c40f"></i><span class="ct">Ritmo de oído</span><span class="cd">Replica el patrón rítmico que escuchas.</span><span class="tag ready">DISPONIBLE</span></a>
+      <a class="card ready" href="./oido-intervalos.html"><i class="ti ti-ear ci" style="color:#f1c40f"></i><span class="ct">Intervalos de oído</span><span class="cd">Adivina el intervalo entre dos notas.</span></a>
+      <a class="card ready" href="./oido-acordes.html"><i class="ti ti-ear ci" style="color:#f1c40f"></i><span class="ct">Acordes de oído</span><span class="cd">Identifica la calidad del acorde.</span></a>
+      <a class="card ready" href="./oido-ritmo.html"><i class="ti ti-wave-square ci" style="color:#f1c40f"></i><span class="ct">Ritmo de oído</span><span class="cd">Replica el patrón rítmico que escuchas.</span></a>
     </div>
   </div>
 
   <div class="area">
     <div class="area-head"><span class="dot" style="background:#e74c3c"></span><h2>PRÁCTICA INSTRUMENTAL</h2></div>
     <div class="cards">
-      <a class="card ready" href="./bateria.html"><i class="ti ti-device-speaker ci" style="color:#e74c3c"></i><span class="ct">Caja de ritmos</span><span class="cd">Secuenciador de batería con samples, BPM y exportación WAV/PNG.</span><span class="tag ready">DISPONIBLE</span></a>
+      <a class="card ready" href="./bateria.html"><i class="ti ti-device-speaker ci" style="color:#e74c3c"></i><span class="ct">Caja de ritmos</span><span class="cd">Secuenciador de batería con samples, BPM y exportación WAV/PNG.</span></a>
     </div>
   </div>
 
   <div class="area">
     <div class="area-head"><span class="dot" style="background:#3498db"></span><h2>COMPOSICIÓN</h2></div>
     <div class="cards">
-      <a class="card ready" href="./secuenciador-melodico.html"><i class="ti ti-grid-dots ci" style="color:#3498db"></i><span class="ct">Secuenciador melódico</span><span class="cd">Piano-roll por pasos con exportación MIDI/WAV.</span><span class="tag ready">DISPONIBLE</span></a>
-      <a class="card ready" href="./progresiones.html"><i class="ti ti-layout-grid ci" style="color:#3498db"></i><span class="ct">Progresiones</span><span class="cd">Constructor de progresiones de acordes con MIDI/WAV.</span><span class="tag ready">DISPONIBLE</span></a>
+      <a class="card ready" href="./secuenciador-melodico.html"><i class="ti ti-grid-dots ci" style="color:#3498db"></i><span class="ct">Secuenciador melódico</span><span class="cd">Piano-roll por pasos con exportación MIDI/WAV.</span></a>
+      <a class="card ready" href="./progresiones.html"><i class="ti ti-layout-grid ci" style="color:#3498db"></i><span class="ct">Progresiones</span><span class="cd">Constructor de progresiones de acordes con MIDI/WAV.</span></a>
     </div>
   </div>
 
