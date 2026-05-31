@@ -18,23 +18,23 @@
   --tm-muted: #555;
   --tm-color-white: #fff;
   --tm-color-black: #000;
-  --tm-overlay-02: var(--tm-overlay-02);
-  --tm-overlay-04: var(--tm-overlay-04);
-  --tm-overlay-05: var(--tm-overlay-05);
-  --tm-overlay-06: var(--tm-overlay-06);
-  --tm-overlay-07: var(--tm-overlay-07);
-  --tm-overlay-08: var(--tm-overlay-08);
-  --tm-overlay-10: var(--tm-overlay-10);
-  --tm-overlay-12: var(--tm-overlay-12);
-  --tm-overlay-15: var(--tm-overlay-15);
-  --tm-overlay-18: var(--tm-overlay-18);
-  --tm-overlay-20: var(--tm-overlay-20);
-  --tm-overlay-25: var(--tm-overlay-25);
-  --tm-overlay-35: var(--tm-overlay-35);
-  --tm-overlay-40: var(--tm-overlay-40);
-  --tm-overlay-50: var(--tm-overlay-50);
-  --tm-overlay-60: var(--tm-overlay-60);
-  --tm-overlay-70: var(--tm-overlay-70);
+  --tm-overlay-02: rgba(255,255,255,0.02);
+  --tm-overlay-04: rgba(255,255,255,0.04);
+  --tm-overlay-05: rgba(255,255,255,0.05);
+  --tm-overlay-06: rgba(255,255,255,0.06);
+  --tm-overlay-07: rgba(255,255,255,0.07);
+  --tm-overlay-08: rgba(255,255,255,0.08);
+  --tm-overlay-10: rgba(255,255,255,0.1);
+  --tm-overlay-12: rgba(255,255,255,0.12);
+  --tm-overlay-15: rgba(255,255,255,0.15);
+  --tm-overlay-18: rgba(255,255,255,0.18);
+  --tm-overlay-20: rgba(255,255,255,0.2);
+  --tm-overlay-25: rgba(255,255,255,0.25);
+  --tm-overlay-35: rgba(255,255,255,0.35);
+  --tm-overlay-40: rgba(255,255,255,0.4);
+  --tm-overlay-50: rgba(255,255,255,0.5);
+  --tm-overlay-60: rgba(255,255,255,0.6);
+  --tm-overlay-70: rgba(255,255,255,0.7);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
