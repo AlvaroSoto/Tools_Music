@@ -37,7 +37,7 @@
 <div class="tm-root">
   <div class="tm-top">
     <div style="display:flex;align-items:center;gap:12px;">
-      <a href="./index.html" class="tm-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;"><i class="ti ti-arrow-left"></i> MENÚ</a>
+      
       <div class="tm-title">ESCALAS &amp; ACORDES</div>
     </div>
     <div class="tm-controls">
@@ -46,7 +46,7 @@
   </div>
 
   <div class="opt-row">
-    <label>Tónica: <select id="tonicSel"></select></label>
+    <label>Tónica: <select id="tonicSel" data-tooltip="Elige la nota base (tónica) para calcular los intervalos"></select></label>
     <div class="seg" id="modeSeg">
       <button data-mode="scale" class="on">ESCALA</button>
       <button data-mode="chord">ACORDE</button>
@@ -129,7 +129,7 @@
       const k=document.createElement('div');
       k.className='key '+(isBlack(m)?'black':'white');
       k.dataset.midi=m;
-      k.addEventListener('mousedown', ()=>{ S.playNote(T.midiToFreq(m),{dur:0.6,gain:0.45}); flashKey(m); });
+      k.addEventListener('pointerdown', ()=>{ S.playNote(T.midiToFreq(m),{dur:0.6,gain:0.45}); flashKey(m); });
       piano.appendChild(k);
     }
   }
@@ -162,5 +162,6 @@
   fillTonic(); fillTypes(); buildPiano(); renderNotes();
 })();
 </script>
+<script src="./shared/nav.js"></script>
 </body>
 </html>

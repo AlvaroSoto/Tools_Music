@@ -34,14 +34,14 @@
 <div class="tm-root">
   <div class="tm-top">
     <div style="display:flex;align-items:center;gap:12px;">
-      <a href="./index.html" class="tm-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;"><i class="ti ti-arrow-left"></i> MENÚ</a>
+      
       <div class="tm-title">PIANO</div>
     </div>
   </div>
 
   <div class="opt-row">
     <label>Tónica:
-      <select id="tonicSel"></select>
+      <select id="tonicSel" data-tooltip="Elige la nota base (tónica) para calcular los intervalos"></select>
     </label>
     <label><input type="checkbox" id="flatChk"> usar bemoles</label>
     <span class="tm-hint">Haz clic en una tecla (o usa el teclado: fila Z=do, S/W=sostenidos)</span>
@@ -109,7 +109,7 @@
       const nm = document.createElement('div'); nm.className='kname';
       nm.textContent = T.midiToName(m, useFlats);
       k.appendChild(nm);
-      k.addEventListener('mousedown', ()=>press(m));
+      k.addEventListener('pointerdown', ()=>press(m));
       piano.appendChild(k);
     }
   }
@@ -132,5 +132,6 @@
   build();
 })();
 </script>
+<script src="./shared/nav.js"></script>
 </body>
 </html>

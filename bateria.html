@@ -563,7 +563,7 @@ document.getElementById('bpmUp').addEventListener('click',()=>setBpm(bpm+1));
     timer=setTimeout(()=>{ fast=setInterval(()=>setBpm(bpm+delta),60); },400);
   };
   const stop=()=>{ clearTimeout(timer); clearInterval(fast); timer=fast=null; };
-  btn.addEventListener('mousedown',start); btn.addEventListener('touchstart',start);
+  btn.addEventListener('pointerdown',start); btn.addEventListener('touchstart',start);
   btn.addEventListener('mouseup',stop); btn.addEventListener('mouseleave',stop);
   btn.addEventListener('touchend',stop); btn.addEventListener('touchcancel',stop);
 });
@@ -846,5 +846,6 @@ document.getElementById('btnLoad').addEventListener('click', ()=>{
 buildTable();
 })();
 </script>
+<script src="./shared/nav.js"></script>
 </body>
 </html>
