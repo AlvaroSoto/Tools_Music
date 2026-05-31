@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Drum Machine</title>
+<title>Batería</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
@@ -93,7 +93,7 @@ body{background:var(--tm-bg);display:flex;justify-content:center;align-items:fle
 <div class="dm-root">
   <div class="dm-top">
     <div style="display:flex;align-items:center;gap:12px;">
-      <div class="dm-title">DRUM MACHINE</div>
+      <div class="dm-title">BATERÍA</div>
     </div>
     <div class="dm-controls">
       <div class="dm-bpm">BPM <button class="bpm-btn" id="bpmDown" title="Bajar BPM">&minus;</button><input type="range" min="30" max="300" value="120" id="bpmSlider" step="1"><button class="bpm-btn" id="bpmUp" title="Subir BPM">+</button><span class="dm-bpm-val" id="bpmVal">120</span></div>
@@ -718,7 +718,7 @@ function exportImage(){
   const canvas=document.createElement('canvas'); canvas.width=W*2; canvas.height=H*2;
   const ctx2=canvas.getContext('2d'); ctx2.scale(2,2);
   ctx2.fillStyle=document.body.classList.contains('light-mode')?'#fff':document.body.classList.contains('light-mode')?'#fff':'#111'; ctx2.fillRect(0,0,W,H);
-  ctx2.fillStyle='var(--tm-color-white)'; ctx2.font='bold 18px monospace'; ctx2.fillText('DRUM MACHINE',PAD,28);
+  ctx2.fillStyle='var(--tm-color-white)'; ctx2.font='bold 18px monospace'; ctx2.fillText('BATERÍA',PAD,28);
   ctx2.fillStyle='#555'; ctx2.font='9px monospace'; ctx2.textAlign='right';
   ctx2.fillText(bpm+' BPM  '+ACTIVE_STEPS+' steps',W-PAD,28); ctx2.textAlign='left';
   for(let s=0;s<MAX_STEPS;s++){
@@ -745,7 +745,7 @@ function exportImage(){
     }
   });
   ctx2.fillStyle=document.body.classList.contains('light-mode')?'#ddd':'#333'; ctx2.fillRect(PAD,H-26,W-PAD*2,0.5);
-  ctx2.fillStyle=document.body.classList.contains('light-mode')?'#666':'#444'; ctx2.font='9px monospace'; ctx2.fillText('drum machine',PAD,H-10);
+  ctx2.fillStyle=document.body.classList.contains('light-mode')?'#666':'#444'; ctx2.font='9px monospace'; ctx2.fillText('batería',PAD,H-10);
   canvas.toBlob(blob=>{
     const url=URL.createObjectURL(blob); const a=document.createElement('a');
     a.href=url; a.download='ritmo-bateria.png'; a.click();
