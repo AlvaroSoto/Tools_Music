@@ -7,23 +7,23 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<link rel="stylesheet" href="./shared/ui.css?v=2">
+<link rel="stylesheet" href="./shared/ui.css?v=3">
 <style>
 .tm-root { max-width: 560px; text-align:center; }
-.note-big { font-family:'Bebas Neue',sans-serif; font-size:120px; line-height:1; color:#555; letter-spacing:4px; margin:6px 0; transition:color 0.15s; }
+.note-big { font-family:'Bebas Neue',sans-serif; font-size:120px; line-height:1; color:var(--tm-muted); letter-spacing:4px; margin:6px 0; transition:color 0.15s; }
 .note-big.intune { color:var(--tm-ok); }
 .freq-line { font-size:12px; color:#777; letter-spacing:1px; }
-.target { font-size:11px; color:#555; margin-top:4px; }
+.target { font-size:11px; color:var(--tm-muted); margin-top:4px; }
 .meter { position:relative; height:70px; margin:24px 0 8px; }
 .meter-bar { position:absolute; top:30px; left:0; right:0; height:6px; background:var(--tm-panel-2); border-radius:3px; }
 .meter-center { position:absolute; top:18px; left:50%; width:2px; height:30px; background:var(--tm-ok); transform:translateX(-1px); }
 .meter-needle { position:absolute; top:10px; left:50%; width:4px; height:46px; background:var(--tm-accent); border-radius:2px; transition:left 0.08s, background 0.1s; transform:translateX(-2px); }
 .meter-needle.intune { background:var(--tm-ok); }
-.scale-marks { position:absolute; top:42px; left:0; right:0; display:flex; justify-content:space-between; font-size:9px; color:#555; }
-.cents { font-size:12px; color:#888; letter-spacing:1px; min-height:16px; }
+.scale-marks { position:absolute; top:42px; left:0; right:0; display:flex; justify-content:space-between; font-size:9px; color:var(--tm-muted); }
+.cents { font-size:12px; color:var(--tm-muted); letter-spacing:1px; min-height:16px; }
 .start-btn { margin-top:24px; }
-.status { font-size:11px; color:#666; margin-top:14px; min-height:16px; letter-spacing:1px; }
-.a4row { font-size:10px; color:#555; margin-top:18px; }
+.status { font-size:11px; color:var(--tm-muted); margin-top:14px; min-height:16px; letter-spacing:1px; }
+.a4row { font-size:10px; color:var(--tm-muted); margin-top:18px; }
 .a4row input { width:60px; background:var(--tm-panel-2); color:#ddd; border:0.5px solid var(--tm-overlay-18); border-radius:5px; padding:3px 6px; font-family:'Space Mono',monospace; text-align:center; }
 </style>
 </head>

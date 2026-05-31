@@ -7,17 +7,17 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<link rel="stylesheet" href="./shared/ui.css?v=2">
+<link rel="stylesheet" href="./shared/ui.css?v=3">
 <style>
 .tm-root { max-width: 880px; }
-.opt-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:11px; color:#888; margin-bottom:14px; }
+.opt-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:11px; color:var(--tm-muted); margin-bottom:14px; }
 .opt-row select, .opt-row input[type=range] { vertical-align:middle; }
 .opt-row select { background:var(--tm-panel-2); color:#ddd; border:0.5px solid var(--tm-overlay-18); border-radius:6px; padding:5px 8px; font-family:'Space Mono',monospace; font-size:11px; }
 .opt-row input[type=range] { accent-color:var(--tm-accent); width:90px; }
-.roll-wrap { overflow-x:auto; border:0.5px solid var(--tm-overlay-08); border-radius:10px; background:#0d0d0d; padding:6px; }
+.roll-wrap { overflow-x:auto; border:0.5px solid var(--tm-overlay-08); border-radius:10px; background:var(--tm-panel); padding:6px; }
 .roll { border-collapse:collapse; table-layout:fixed; }
 .roll td { width:30px; height:22px; padding:0; }
-.roll .rowlabel { width:42px; font-size:9px; color:#666; text-align:right; padding-right:6px; white-space:nowrap; }
+.roll .rowlabel { width:42px; font-size:9px; color:var(--tm-muted); text-align:right; padding-right:6px; white-space:nowrap; }
 .roll .rowlabel.inkey { color:#9ecbff; }
 .cell { width:28px; height:20px; border:0.5px solid var(--tm-overlay-06); border-radius:3px; cursor:pointer; background:var(--tm-overlay-02); }
 .cell.beat { border-left:1px solid var(--tm-overlay-18); }
@@ -26,7 +26,7 @@
 .cell.playing { outline:2px solid var(--tm-overlay-70); outline-offset:-2px; }
 .cell.blackrow { background:rgba(255,255,255,0.0); }
 .controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:14px 0; }
-#status { font-size:10px; color:#666; }
+#status { font-size:10px; color:var(--tm-muted); }
 </style>
 </head>
 <body>
