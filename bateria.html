@@ -179,7 +179,7 @@ body{background:var(--tm-bg);display:flex;justify-content:center;align-items:fle
         <option value="3/4">3/4</option>
         <option value="6/8">6/8</option>
       </select>
-      pasos <input type="range" min="4" max="64" value="16" id="stepsSlider" step="1"> <span class="steps-val" id="stepsVal" style="min-width:30px">16</span> <span id="compasesVal" style="color:var(--tm-overlay-50);font-size:9px;">(1 compás)</span>
+      longitud <input type="range" min="1" max="4" value="1" id="compasesSlider" step="1"> <span class="steps-val" id="compasesVal" style="min-width:16px">1</span> <span style="color:var(--tm-overlay-50);font-size:9px;">compases</span>
     </div>
   </div>
 
@@ -594,21 +594,22 @@ document.getElementById('bpmUp').addEventListener('click',()=>setBpm(bpm+1));
   btn.addEventListener('mouseup',stop); btn.addEventListener('mouseleave',stop);
   btn.addEventListener('touchend',stop); btn.addEventListener('touchcancel',stop);
 });
-function updateCompasesText(){
+function updateStepsFromCompases(){
   const pasosPorCompas = (TIME_SIG==='4/4') ? 16 : 12;
-  const comp = (ACTIVE_STEPS / pasosPorCompas).toFixed(2).replace(/\.?0+$/,'');
-  document.getElementById('compasesVal').textContent = `(${comp} compás${comp!=='1'?'es':''})`;
+  const numCompases = parseInt(document.getElementById('compasesSlider').value);
+  document.getElementById('compasesVal').textContent = numCompases;
+  ACTIVE_STEPS = numCompases * pasosPorCompas;
 }
 document.getElementById('timeSig').addEventListener('change', function(){
   TIME_SIG = this.value;
   BEAT_DIV = (TIME_SIG==='6/8') ? 3 : 4;
+  updateStepsFromCompases();
   buildTable();
+  if(playing&&currentStep>=ACTIVE_STEPS) currentStep=0;
   updateActiveSteps();
-  updateCompasesText();
 });
-document.getElementById('stepsSlider').addEventListener('input',function(){
-  ACTIVE_STEPS=parseInt(this.value); document.getElementById('stepsVal').textContent=ACTIVE_STEPS;
-  updateCompasesText();
+document.getElementById('compasesSlider').addEventListener('input',function(){
+  updateStepsFromCompases();
   if(playing&&currentStep>=ACTIVE_STEPS) currentStep=0;
   updateActiveSteps();
 });
@@ -821,9 +822,20 @@ function clearGrid(){ DRUMS.forEach(d=>{ grid[d.id]=new Array(MAX_STEPS).fill(fa
 function applyPattern(p){
   const was = playing; if(playing) stopPlay();
   clearGrid();
-  ACTIVE_STEPS = Math.max(4, Math.min(MAX_STEPS, p.steps||ACTIVE_STEPS));
-  document.getElementById('stepsSlider').value = ACTIVE_STEPS;
-  document.getElementById('stepsVal').textContent = ACTIVE_STEPS;
+  // Set time signature based on preset steps/bpm if possible
+  let newTimeSig = p.steps===12 ? (p.bpm>120 ? '3/4' : '6/8') : '4/4';
+  if(TIME_SIG !== newTimeSig) {
+    TIME_SIG = newTimeSig;
+    BEAT_DIV = (TIME_SIG==='6/8') ? 3 : 4;
+    document.getElementById('timeSig').value = TIME_SIG;
+    buildTable();
+  }
+  const pasosPorCompas = (TIME_SIG==='4/4') ? 16 : 12;
+  let comp = Math.ceil(p.steps / pasosPorCompas);
+  if(comp<1) comp=1; if(comp>4) comp=4;
+  document.getElementById('compasesSlider').value = comp;
+  updateStepsFromCompases();
+  
   const on = p.on || p.grid || {};
   DRUMS.forEach(d=>{
     const arr = on[d.id];
