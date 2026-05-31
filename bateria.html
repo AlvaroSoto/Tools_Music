@@ -173,7 +173,14 @@ body{background:var(--tm-bg);display:flex;justify-content:center;align-items:fle
 
   <div class="seq-bottom">
     <div style="font-size:10px;color:var(--tm-muted);letter-spacing:0.5px;">clic instrumento = mute &middot; arrastra a pasos &middot; clic paso = activar</div>
-    <div class="steps-control">pasos <input type="range" min="4" max="64" value="16" id="stepsSlider" step="4"> <span class="steps-val" id="stepsVal" style="min-width:30px">16</span> <span id="compasesVal" style="color:var(--tm-overlay-50);font-size:9px;">(1 compás)</span></div>
+    <div class="steps-control">
+      compás <select id="timeSig" style="background:var(--tm-panel-2);color:#ddd;border:0.5px solid rgba(255,255,255,0.18);border-radius:6px;padding:3px;font-family:'Space Mono',monospace;font-size:11px;margin-right:8px;">
+        <option value="4/4">4/4</option>
+        <option value="3/4">3/4</option>
+        <option value="6/8">6/8</option>
+      </select>
+      pasos <input type="range" min="4" max="64" value="16" id="stepsSlider" step="1"> <span class="steps-val" id="stepsVal" style="min-width:30px">16</span> <span id="compasesVal" style="color:var(--tm-overlay-50);font-size:9px;">(1 compás)</span>
+    </div>
   </div>
 
   <div class="export-row">
@@ -203,6 +210,7 @@ body{background:var(--tm-bg);display:flex;justify-content:center;align-items:fle
 
 const AC = window.AudioContext || window.webkitAudioContext;
 let actx = null;
+let masterGain = null;
 function getCtx(){
   if(!actx){
     actx = new AC();
@@ -399,7 +407,7 @@ function flashPart(id){
 const MAX_STEPS = 64;
 let ACTIVE_STEPS = 16, bpm = 120, playing = false, currentStep = 0, intervalId = null;
 const grid = {}, muted = {};
-let masterGain = null;
+let TIME_SIG = '4/4', BEAT_DIV = 4;
 DRUMS.forEach(d=>{ grid[d.id]=new Array(MAX_STEPS).fill(false); muted[d.id]=false; });
 
 // ─── Guide panel ──────────────────────────────────────────────────────────────
@@ -449,9 +457,9 @@ function buildTable(){
   const hr = document.createElement('tr'); hr.className='seq-header-row';
   const eth = document.createElement('th'); eth.className='label-col'; hr.appendChild(eth);
   for(let s=0;s<MAX_STEPS;s++){
-    if(s>0&&s%4===0){ const d=document.createElement('th');d.className='beat-div-col';hr.appendChild(d); }
+    if(s>0&&s%BEAT_DIV===0){ const d=document.createElement('th');d.className='beat-div-col';hr.appendChild(d); }
     const th=document.createElement('th');
-    if(s%4===0){ th.className='beat-marker'; th.textContent=Math.floor(s/4)+1; } else { th.textContent='.'; }
+    if(s%BEAT_DIV===0){ th.className='beat-marker'; th.textContent=Math.floor(s/BEAT_DIV)+1; } else { th.textContent='.'; }
     hr.appendChild(th);
   }
   table.appendChild(hr);
@@ -484,7 +492,7 @@ function buildTable(){
 
     // Step buttons
     for(let s=0;s<MAX_STEPS;s++){
-      if(s>0&&s%4===0){
+      if(s>0&&s%BEAT_DIV===0){
         const dt=document.createElement('td'); dt.className='beat-div-cell';
         dt.innerHTML='<div class="beat-line"></div>'; tr.appendChild(dt);
       }
@@ -586,10 +594,21 @@ document.getElementById('bpmUp').addEventListener('click',()=>setBpm(bpm+1));
   btn.addEventListener('mouseup',stop); btn.addEventListener('mouseleave',stop);
   btn.addEventListener('touchend',stop); btn.addEventListener('touchcancel',stop);
 });
+function updateCompasesText(){
+  const pasosPorCompas = (TIME_SIG==='4/4') ? 16 : 12;
+  const comp = (ACTIVE_STEPS / pasosPorCompas).toFixed(2).replace(/\.?0+$/,'');
+  document.getElementById('compasesVal').textContent = `(${comp} compás${comp!=='1'?'es':''})`;
+}
+document.getElementById('timeSig').addEventListener('change', function(){
+  TIME_SIG = this.value;
+  BEAT_DIV = (TIME_SIG==='6/8') ? 3 : 4;
+  buildTable();
+  updateActiveSteps();
+  updateCompasesText();
+});
 document.getElementById('stepsSlider').addEventListener('input',function(){
   ACTIVE_STEPS=parseInt(this.value); document.getElementById('stepsVal').textContent=ACTIVE_STEPS;
-  const comp = Math.ceil(ACTIVE_STEPS/16);
-  document.getElementById('compasesVal').textContent = `(${comp} compás${comp!==1?'es':''})`;
+  updateCompasesText();
   if(playing&&currentStep>=ACTIVE_STEPS) currentStep=0;
   updateActiveSteps();
 });
@@ -735,7 +754,7 @@ function exportImage(){
   setStatus('Generando PNG...');
   const CELL=30,LABEL_W=110,PAD=16,BEAT_GAP=8;
   const DRAW_STEPS = Math.max(16, ACTIVE_STEPS);
-  const W=LABEL_W+DRAW_STEPS*CELL+Math.floor((DRAW_STEPS-1)/4)*BEAT_GAP+PAD*2;
+  const W=LABEL_W+DRAW_STEPS*CELL+Math.floor((DRAW_STEPS-1)/BEAT_DIV)*BEAT_GAP+PAD*2;
   const H=46+DRUMS.length*38+32;
   const canvas=document.createElement('canvas'); canvas.width=W*2; canvas.height=H*2;
   const ctx2=canvas.getContext('2d'); ctx2.scale(2,2);
@@ -743,11 +762,11 @@ function exportImage(){
   ctx2.fillStyle='var(--tm-color-white)'; ctx2.font='bold 18px monospace'; ctx2.fillText('BATERÍA',PAD,28);
   ctx2.fillStyle='#555'; ctx2.font='9px monospace'; ctx2.textAlign='right';
   ctx2.fillText(bpm+' BPM  '+ACTIVE_STEPS+' steps',W-PAD,28); ctx2.textAlign='left';
-  for(let s=0;s<MAX_STEPS;s++){
-    const extra=Math.floor(s/4)*BEAT_GAP, x=PAD+LABEL_W+s*CELL+extra;
-    if(s%4===0){
+  for(let s=0;s<DRAW_STEPS;s++){
+    const extra=Math.floor(s/BEAT_DIV)*BEAT_GAP, x=PAD+LABEL_W+s*CELL+extra;
+    if(s%BEAT_DIV===0){
       ctx2.fillStyle=s<ACTIVE_STEPS?'#666':document.body.classList.contains('light-mode')?'#ddd':'#333'; ctx2.font='bold 9px monospace';
-      ctx2.textAlign='center'; ctx2.fillText(Math.floor(s/4)+1,x+CELL/2,38);
+      ctx2.textAlign='center'; ctx2.fillText(Math.floor(s/BEAT_DIV)+1,x+CELL/2,38);
       if(s>0){ ctx2.fillStyle='rgba(255,255,255,0.07)'; ctx2.fillRect(x-BEAT_GAP/2,46,1,DRUMS.length*38); }
     }
   }
@@ -760,7 +779,7 @@ function exportImage(){
     ctx2.fillStyle='#aaa'; ctx2.font='bold 9px monospace'; ctx2.fillText(drum.label,PAD+18,y+22);
     ctx2.globalAlpha=1;
     for(let s=0;s<DRAW_STEPS;s++){
-      const extra=Math.floor(s/4)*BEAT_GAP, x=PAD+LABEL_W+s*CELL+extra, cx=x+CELL/2, cy=y+19, r=10, active=s<ACTIVE_STEPS;
+      const extra=Math.floor(s/BEAT_DIV)*BEAT_GAP, x=PAD+LABEL_W+s*CELL+extra, cx=x+CELL/2, cy=y+19, r=10, active=s<ACTIVE_STEPS;
       ctx2.beginPath(); ctx2.roundRect(cx-r,cy-r,r*2,r*2,3);
       if(grid[drum.id][s]&&active){ ctx2.globalAlpha=isMuted?0.25:1; ctx2.fillStyle=drum.color; ctx2.fill(); ctx2.globalAlpha=1; }
       else { ctx2.fillStyle=active?(document.body.classList.contains('light-mode')?'rgba(0,0,0,0.1)':'rgba(255,255,255,0.05)'):(document.body.classList.contains('light-mode')?'rgba(0,0,0,0.03)':'rgba(255,255,255,0.02)'); ctx2.fill(); ctx2.strokeStyle=active?(document.body.classList.contains('light-mode')?'rgba(0,0,0,0.2)':'rgba(255,255,255,0.1)'):(document.body.classList.contains('light-mode')?'rgba(0,0,0,0.08)':'rgba(255,255,255,0.04)'); ctx2.lineWidth=0.5; ctx2.stroke(); }
